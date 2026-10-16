@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Macro Wire · Log in</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/css/fonts.css">
+  <link rel="stylesheet" href="/static/css/terminal.css">
+  <script type="module" src="/static/js/login.js"></script>
+</head>
+<body>
+<main class="login">
+  <h1>Macro Wire</h1>
+  <p>How S&amp;P 500 options priced CPI, FOMC and payrolls days, and what really happened.</p>
+  <p class="note">Local dev login. Accounts are confirmed at once and stay on this computer. Email confirmation and
+    password reset come with Supabase Auth.</p>
+
+  <section id="login-section" aria-labelledby="login-title">
+    <h2 id="login-title">Log in</h2>
+    <form id="login-form" novalidate>
+      <label>Email <input type="email" name="email" autocomplete="username" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">Log in</button>
+      <p class="error" role="alert" id="login-error"></p>
+    </form>
+    <p><button class="link" type="button" id="show-signup">Create a free account</button> ·
+      <button class="link" type="button" id="reset">Forgot your password?</button></p>
+  </section>
+
+  <section id="signup-section" class="hidden" aria-labelledby="signup-title">
+    <h2 id="signup-title">Create a free account</h2>
+    <form id="signup-form" novalidate>
+      <label>Email <input type="email" name="email" autocomplete="username" required></label>
+      <label>Password (at least 10 characters)
+        <input type="password" name="password" autocomplete="new-password" minlength="10" required></label>
+      <label class="check"><input type="checkbox" name="accept_terms" required>
+        <span>I accept the terms: Macro Wire is for education only and is not advice, and I will not redistribute its data.</span></label>
+      <button class="primary" type="submit">Create account</button>
+      <p class="error" role="alert" id="signup-error"></p>
+    </form>
+    <p>The free Student plan includes a daily allowance of tutor messages.
+      <button class="link" type="button" id="show-login">I already have an account</button></p>
+  </section>
+</main>
+</body>
+</html>

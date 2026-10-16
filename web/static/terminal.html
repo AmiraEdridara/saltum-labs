@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Macro Wire · Terminal</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/css/fonts.css">
+  <link rel="stylesheet" href="/static/css/terminal.css">
+  <script type="module" src="/static/js/app.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="/" title="The homepage">Macro Wire</a>
+    <span class="fact">Underlying <span class="num">SPX</span></span>
+    <span class="fact">Data to <span class="num" id="latest-close">…</span> <span class="v1-note">· v1 frozen to <span class="num">2026-10-09</span></span></span>
+    <div class="account">
+      <button type="button" id="account-button" aria-haspopup="true" aria-expanded="false">Account</button>
+      <div class="account-menu hidden" id="account-menu">
+        <dl>
+          <dt>Email</dt><dd id="acct-email"></dd>
+          <dt>Plan</dt><dd id="acct-plan"></dd>
+          <dt>Tutor today</dt><dd id="acct-tutor"></dd>
+          <dt>Login</dt><dd id="acct-provider"></dd>
+        </dl>
+        <div class="actions">
+          <button type="button" id="logout">Log out</button>
+          <button type="button" id="delete-open">Delete account</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <p class="stale-banner hidden" id="stale-banner" role="alert"></p>
+  <p class="stale-banner hidden" id="update-banner" role="alert"></p>
+
+  <div class="workspace" id="workspace">
+    <nav class="nav" aria-label="Pages">
+      <ol id="nav-list"></ol>
+      <div class="controls">
+        <button type="button" id="toggle-split" aria-pressed="false">Split view <kbd>S</kbd></button>
+        <button type="button" id="toggle-tutor" aria-pressed="false">Tutor <kbd>T</kbd></button>
+        <button type="button" id="show-keys">Shortcuts <kbd>?</kbd></button>
+      </div>
+    </nav>
+
+    <main class="main" id="main">
+      <section class="pane" id="pane-a" aria-label="Pane A"></section>
+      <section class="pane" id="pane-b" aria-label="Pane B"></section>
+    </main>
+
+    <aside class="tutor hidden" id="tutor" aria-labelledby="tutor-title">
+      <div class="tutor-resize" id="tutor-resize" role="separator" aria-orientation="vertical" tabindex="0"
+           aria-controls="tutor" aria-label="Resize the tutor panel (left and right arrow keys)"></div>
+      <div class="tutor-head">
+        <h2 id="tutor-title">Tutor</h2>
+        <div class="tutor-head-buttons">
+          <button type="button" id="tutor-sessions-button" aria-expanded="false" aria-controls="tutor-sessions">Sessions</button>
+          <button type="button" id="tutor-new">New</button>
+          <button type="button" id="tutor-close">Close</button>
+        </div>
+      </div>
+      <section class="tutor-sessions hidden" id="tutor-sessions" aria-label="Saved sessions"></section>
+      <p class="muted small" id="tutor-session">New session</p>
+      <div class="tutor-log" id="tutor-log" aria-live="polite"></div>
+      <form id="tutor-form" class="tutor-form">
+        <label class="sr-only" for="tutor-q">Ask the tutor</label>
+        <textarea id="tutor-q" rows="3" maxlength="2000" placeholder="Ask about this page, a term, or test a claim"></textarea>
+        <div class="controls-row">
+          <button class="primary" type="submit">Ask</button>
+          <span class="muted small">Ctrl+Enter sends</span>
+        </div>
+        <p class="status" id="tutor-left"></p>
+      </form>
+      <p class="muted small">Answers use the site's own numbers only, each with its source. Education only, not advice.</p>
+      <details class="tutor-sees"><summary>What the tutor sees on screen</summary><dl class="params" id="tutor-context"></dl></details>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <strong>Education only, not advice.</strong>
+    <span>Data: SPX and SPXW options from ThetaData; Treasury bills and VIX from FRED.</span>
+    <span>16:15 ET snapshots, 2020-01 to the latest close.</span>
+    <span class="status" id="status" role="status" aria-live="polite"></span>
+  </footer>
+</div>
+
+<dialog id="keys-dialog" aria-labelledby="keys-title">
+  <h2 id="keys-title">Keyboard shortcuts</h2>
+  <table class="keys"><tbody id="keys-body"></tbody></table>
+  <p class="muted">Shortcuts are off while you type in a field. Tab moves focus as usual.</p>
+  <form method="dialog"><button type="submit">Close</button></form>
+</dialog>
+
+<dialog id="delete-dialog" aria-labelledby="delete-title">
+  <h2 id="delete-title">Delete your account</h2>
+  <p>This removes your account, its layout settings and its tutor counts from this computer. It cannot be undone.</p>
+  <form id="delete-form">
+    <label>Type your email to confirm <input type="email" name="confirm_email" required></label>
+    <p class="error" role="alert" id="delete-error"></p>
+    <div class="controls-row">
+      <button type="button" id="delete-cancel">Cancel</button>
+      <button type="submit" class="primary">Delete account</button>
+    </div>
+  </form>
+</dialog>
+</body>
+</html>

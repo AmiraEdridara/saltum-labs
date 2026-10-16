@@ -1,0 +1,388 @@
+<title>SPX Clean Vol Surface</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Template for vol_page.py. The script replaces the data placeholder in the script block below.
+   Layout: one research-note column. A lead figure (the surface) at full width, then two smaller
+   figures side by side, each with a caption and its numbers folded underneath. */
+:root {
+  --bg: #f4f5f3; --panel: #fbfbfa; --fg: #14181d; --muted: #5b6470; --rule: #d3d8dc; --grid: #e3e7ea;
+  --accent: #1c5cab; --before: #2a78d6; --after: #eb6834; --warn: #8a5a00;
+  --seq-lo: #cde2fb; --seq-mid: #3987e5; --seq-hi: #0d366b;
+  --ord-a: #86b6ef; --ord-b: #0d366b;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151a; --panel: #181c22; --fg: #e8ebee; --muted: #9aa4b0; --rule: #2c333c; --grid: #232a32;
+  --accent: #6da7ec; --before: #3987e5; --after: #d95926; --warn: #e0b354;
+  --seq-lo: #0d366b; --seq-mid: #3987e5; --seq-hi: #cde2fb;
+  --ord-a: #184f95; --ord-b: #cde2fb; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12151a; --panel: #181c22; --fg: #e8ebee; --muted: #9aa4b0; --rule: #2c333c; --grid: #232a32;
+  --accent: #6da7ec; --before: #3987e5; --after: #d95926; --warn: #e0b354;
+  --seq-lo: #0d366b; --seq-mid: #3987e5; --seq-hi: #cde2fb;
+  --ord-a: #184f95; --ord-b: #cde2fb; color-scheme: dark }
+
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 48px; display: flex; flex-direction: column; gap: 28px; }
+header { display: flex; flex-direction: column; gap: 10px; border-bottom: 2px solid var(--fg); padding-bottom: 16px; }
+.kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(28px, 4.4vw, 42px); line-height: 1.1; margin: 0; text-wrap: balance; }
+.standfirst { max-width: 66ch; color: var(--muted); margin: 0; }
+.standfirst strong { color: var(--warn); font-weight: 600; }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--fg); }
+.seg button { font: 500 13px var(--body); padding: 7px 14px; background: transparent; color: var(--fg); border: 0; border-right: 1px solid var(--fg); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.picker { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; }
+.picker select, .picker button { font: 500 13px var(--body); padding: 6px 10px; background: var(--panel); color: var(--fg); border: 1px solid var(--fg); border-radius: 0; cursor: pointer; }
+.picker select { max-width: min(70vw, 340px); }
+button:focus-visible, select:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+label.chk { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; }
+.link { font: 500 13px var(--body); background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.plot { background: var(--panel); border: 1px solid var(--rule); width: 100%; box-sizing: border-box; }
+#surface { height: 600px; } #smiles, #term { height: 380px; }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 78ch; }
+figcaption b { color: var(--fg); font-weight: 600; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+details { font-size: 13px; }
+summary { cursor: pointer; color: var(--accent); width: fit-content; }
+.scroll { overflow-x: auto; margin-top: 8px; }
+table { border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 12px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); } th:first-child, td:first-child { text-align: left; }
+footer { border-top: 1px solid var(--rule); padding-top: 14px; font-size: 12.5px; color: var(--muted); max-width: 78ch; }
+@media (max-width: 760px) { .pair { grid-template-columns: minmax(0, 1fr); } #surface { height: 430px; } #smiles, #term { height: 320px; } }
+/* Split view: two panes side by side, each with its own date. The panes use display: contents so
+   their parts sit in one grid and line up row by row. */
+[hidden] { display: none !important; }
+.panes { display: grid; gap: 28px; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "ha ha" "sa sa" "ma t"; }
+.panes.split { grid-template-areas: "ha hb" "sa sb" "ma mb" "t t"; }
+.pane { display: contents; }
+#headA { grid-area: ha; } #headB { grid-area: hb; } #figSurf { grid-area: sa; } #figSurfB { grid-area: sb; }
+#figSm { grid-area: ma; } #figSmB { grid-area: mb; } #figTerm { grid-area: t; }
+.panes.split #headB, .panes.split #figSurfB, .panes.split #figSmB { border-left: 1px solid var(--rule); padding-left: 14px; margin-left: -14px; }
+.panehead { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.panenote { margin: 0; font-size: 13.5px; color: var(--muted); }
+.panenote strong { color: var(--warn); font-weight: 600; }
+.toggle { font: 500 13px var(--body); padding: 7px 14px; background: transparent; color: var(--fg); border: 1px solid var(--fg); border-radius: 0; cursor: pointer; }
+.toggle[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.toggle:disabled { opacity: .45; cursor: default; }
+.opts { display: inline-flex; flex-wrap: wrap; gap: 14px 22px; }
+#surfaceB { height: 600px; } #smilesB { height: 380px; }
+.panes.split #surface, .panes.split #surfaceB { height: 470px; }
+@media (max-width: 760px) {
+  .panes { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ha" "sa" "ma" "t"; }
+  .panes.split { grid-template-areas: "ha" "sa" "ma" "hb" "sb" "mb" "t"; }
+  .panes.split #headB, .panes.split #figSurfB, .panes.split #figSmB { border-left: 0; padding-left: 0; margin-left: 0; }
+  .panes.split #surface, .panes.split #surfaceB { height: 430px; }
+  #smilesB { height: 320px; }
+}
+</style>
+<div class="wrap">
+  <header>
+    <div class="kicker">S&amp;P 500 index options · 16:15 ET close</div>
+    <h1>Implied volatility surface</h1>
+    <p class="standfirst">Fitted implied volatility by delta and expiry, for Friday expiries from two weeks to about six months. Use Split view to put two dates side by side.</p>
+    <div class="controls">
+      <button id="split" class="toggle" type="button" aria-pressed="false">Split view</button>
+      <span id="splitOpts" class="opts" hidden>
+        <label class="chk" for="same"><input id="same" type="checkbox" checked> Same vol scale</label>
+        <label class="chk" for="link"><input id="link" type="checkbox" checked> Link rotation</label>
+      </span>
+      <label class="chk" for="pts"><input id="pts" type="checkbox"> Show computed options</label>
+      <button id="reset" class="link" type="button">Reset view</button>
+    </div>
+  </header>
+
+  <div class="panes" id="panes">
+    <section class="pane" id="paneA" aria-label="First date">
+      <div class="panehead" id="headA"><div id="dates"></div><p class="panenote" id="note"></p></div>
+      <figure id="figSurf">
+        <div id="surface" class="plot"></div>
+        <figcaption id="cap1"></figcaption>
+        <details><summary>Numbers behind the surface</summary><div class="scroll" id="tbl1"></div></details>
+      </figure>
+      <figure id="figSm">
+        <div id="smiles" class="plot"></div>
+        <figcaption id="cap2"></figcaption>
+      </figure>
+    </section>
+
+    <section class="pane" id="paneB" aria-label="Second date" hidden>
+      <div class="panehead" id="headB"><div id="datesB"></div><p class="panenote" id="noteB"></p></div>
+      <figure id="figSurfB">
+        <div id="surfaceB" class="plot"></div>
+        <figcaption id="cap1B"></figcaption>
+        <details><summary>Numbers behind the surface</summary><div class="scroll" id="tbl1B"></div></details>
+      </figure>
+      <figure id="figSmB">
+        <div id="smilesB" class="plot"></div>
+        <figcaption id="cap2B"></figcaption>
+      </figure>
+    </section>
+
+    <figure id="figTerm">
+      <div id="term" class="plot"></div>
+      <figcaption id="cap3"></figcaption>
+      <details><summary>Numbers behind the term structure</summary><div class="scroll" id="tbl3"></div></details>
+    </figure>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script src="plotly-strict.min.js"></script>
+<script>
+const DATA = __DATA__;
+const DATES = Object.keys(DATA.dates).sort();
+const $ = id => document.getElementById(id);
+
+// Two panes. The first is always shown; the second appears in Split view. Each has its own date.
+const panes = [{ sfx: '', cur: DATES.length - 1 }, { sfx: 'B', cur: Math.max(0, DATES.length - 2) }];
+let split = false, showPts = false, sameScale = true, linkCam = true, syncing = false;
+const active = () => split ? panes : [panes[0]];
+const figNo = (n, p) => split ? n + (p.sfx ? 'b' : 'a') : String(n);
+
+// Each date has its own delta grid (call-equivalent delta, high to low: puts on the left).
+// It is the full 10-delta put to 10-delta call range, or narrower when the quotes do not reach it.
+// setGrid() is called for a pane's date just before that pane is drawn.
+let G, STEP, X, TICKS, XLAB, TICK_C;
+const dlabel = c => c > 0.505 ? Math.round((1 - c) * 100) + 'Δ put' : c < 0.495 ? Math.round(c * 100) + 'Δ call' : 'ATM';
+function setGrid(d) {
+  G = d.grid;
+  STEP = (G[0] - G[G.length - 1]) / (G.length - 1);
+  X = G.map(c => +(1 - c).toFixed(4));                // left = puts, right = calls
+  const hi = G[0], lo = G[G.length - 1];
+  TICK_C = [...new Set([hi, ...[0.9, 0.75, 0.5, 0.25, 0.1].filter(c => c < hi - 0.02 && c > lo + 0.02), lo])];
+  TICKS = { vals: TICK_C.map(c => +(1 - c).toFixed(4)), text: TICK_C.map(dlabel) };
+  XLAB = G.map(dlabel);
+}
+const rangeNote = d => d.full_range ? '' : ` Drawn from the ${d.range_label} only: fewer than half of the expiries have quotes that reach the 10-delta ends.`;
+const NARROW = () => window.innerWidth < 760;
+const cam = () => { const k = NARROW() ? 1.55 : split ? 1.3 : 1; return { eye: { x: 0.95 * k, y: -1.95 * k, z: 0.75 * k }, center: { x: 0, y: 0, z: -0.12 } }; };
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const day = s => new Date(s + 'T00:00:00Z');
+const fmtDate = s => day(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const shortDate = s => day(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const named = s => fmtDate(s) + (DATA.dates[s].label ? ' (' + DATA.dates[s].label + ')' : '');
+const gapDays = (a, b) => Math.round((day(b) - day(a)) / 864e5);
+function at(row, c) { const p = (G[0] - c) / STEP, i = Math.floor(p + 1e-9), f = p - i; return i >= row.length - 1 ? row[row.length - 1] : row[i] * (1 - f) + row[i + 1] * f; }
+function mix(a, b, t) { const h = s => [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16)); const A = h(a), B = h(b);
+  return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+
+// In the single view, the selected date is compared with the nearest stored snapshot, when one is close enough.
+function pair(i) {
+  const max = DATA.pair_max_days || 5;
+  if (i > 0 && gapDays(DATES[i - 1], DATES[i]) <= max) return [i - 1, i];
+  if (i < DATES.length - 1 && gapDays(DATES[i], DATES[i + 1]) <= max) return [i, i + 1];
+  return [i];
+}
+// One vol range for the dates being compared, so they are drawn to the same scale.
+function volRange(idx) {
+  let lo = Infinity, hi = -Infinity;
+  idx.forEach(i => DATA.dates[DATES[i]].expiries.forEach(e => e.iv.forEach(v => { if (v < lo) lo = v; if (v > hi) hi = v; })));
+  return [Math.max(0, Math.floor(lo - 1)), Math.ceil(hi + 1)];
+}
+
+function base(c) { return { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { family: css('--body'), size: 12, color: c.fg },
+  hoverlabel: { bgcolor: c.panel, bordercolor: c.rule, font: { family: css('--mono'), size: 12, color: c.fg } } }; }
+
+const HAS_GL = (() => { try { const k = document.createElement('canvas'); return !!(k.getContext('webgl2') || k.getContext('webgl')); } catch (e) { return false; } })();
+const scale = c => [[0, c.lo], [0.5, c.mid], [1, c.hi]];
+const hoverFit = '%{customdata[2]} · %{y} days<br>%{customdata[0]} · strike ≈ %{customdata[1]:,}<br><b>IV %{z:.1f}%</b> (fitted)<extra></extra>';
+const cdata = E => E.map(e => e.K.map((k, j) => [XLAB[j], k, fmtDate(e.exp)]));
+
+function drawFlat(p, c, E, zr) {
+  Plotly.react('surface' + p.sfx, [{ type: 'contour', x: X, y: E.map(e => e.dte), z: E.map(e => e.iv), zmin: zr[0], zmax: zr[1], customdata: cdata(E), colorscale: scale(c),
+    contours: { start: zr[0], end: zr[1], size: (zr[1] - zr[0]) > 30 ? 5 : 1, showlabels: true, labelfont: { size: 10, color: c.fg } }, line: { width: 0.5, color: c.contour },
+    colorbar: { title: { text: 'IV %', font: { size: 11 } }, thickness: 10, outlinewidth: 0 }, hovertemplate: hoverFit }],
+    Object.assign(base(c), { margin: { l: 52, r: 16, t: 16, b: 44 },
+      xaxis: { tickvals: TICKS.vals, ticktext: TICKS.text, tickfont: { size: 11 } },
+      yaxis: { title: { text: 'days to expiry', font: { size: 11 } }, tickfont: { family: css('--mono'), size: 11 } } }), { displayModeBar: false, responsive: true });
+}
+
+// When rotation is linked, turning one surface turns the other to the same angle.
+function linkCamera(p) {
+  const gd = $('surface' + p.sfx);
+  if (gd._mwLinked || !gd.on) return;
+  gd._mwLinked = true;
+  gd.on('plotly_relayout', ev => {
+    if (!split || !linkCam || syncing || !ev || !ev['scene.camera']) return;
+    const other = $('surface' + (p.sfx ? '' : 'B'));
+    if (!other || !other._fullLayout || !other._fullLayout.scene) return;
+    syncing = true;
+    const done = () => { syncing = false; };
+    Plotly.relayout(other, { 'scene.camera': ev['scene.camera'] }).then(done, done);
+  });
+}
+
+function drawSurface(p, c, zr) {
+  const d = DATA.dates[DATES[p.cur]], E = d.expiries;
+  if (!HAS_GL) { drawFlat(p, c, E, zr); surfaceCaption(p, d, E, true); return; }
+  const span = zr[1] - zr[0], size = span > 30 ? 5 : span > 14 ? 2 : 1;
+  const traces = [{ type: 'surface', x: X, y: E.map(e => e.dte), z: E.map(e => e.iv), cmin: zr[0], cmax: zr[1], customdata: cdata(E),
+    colorscale: scale(c), showscale: !NARROW() && (!split || !sameScale || p.sfx === 'B'),
+    colorbar: { title: { text: 'IV %', font: { size: 11 } }, thickness: 10, len: 0.55, x: 0.98, outlinewidth: 0, tickfont: { family: css('--mono'), size: 11 } },
+    contours: { z: { show: true, start: Math.ceil(zr[0] / size) * size, end: zr[1], size: size, color: c.contour, width: 1 } },
+    lighting: { ambient: 0.9, diffuse: 0.35, specular: 0.05, roughness: 0.9 }, hovertemplate: hoverFit }];
+  E.forEach(e => traces.push({ type: 'scatter3d', mode: 'lines', x: X, y: X.map(() => e.dte), z: e.iv, line: { color: c.fg, width: 2 }, opacity: 0.55, hoverinfo: 'skip', showlegend: false }));
+  if (showPts) { const px = [], py = [], pz = [], cd = [];
+    E.forEach(e => e.pts.forEach(q => { px.push(1 - q[0]); py.push(e.dte); pz.push(q[1]); cd.push([dlabel(q[0]), q[2], fmtDate(e.exp)]); }));
+    traces.push({ type: 'scatter3d', mode: 'markers', x: px, y: py, z: pz, customdata: cd, marker: { size: 2, color: c.fg, opacity: 0.8 }, showlegend: false,
+      hovertemplate: '%{customdata[2]} · %{y} days<br>%{customdata[0]} · strike %{customdata[1]:,}<br><b>IV %{z:.2f}%</b> (computed)<extra></extra>' }); }
+  const ax = t => ({ title: { text: t, font: { size: 12 } }, gridcolor: c.grid, zerolinecolor: c.grid, showbackground: false, tickfont: { family: css('--mono'), size: 11 }, color: c.muted });
+  const dtes = E.map(e => e.dte);
+  Plotly.react('surface' + p.sfx, traces, Object.assign(base(c), { margin: { l: 0, r: 0, t: 0, b: 0 }, uirevision: 'keep',
+    scene: { uirevision: 'keep', camera: cam(), aspectmode: 'manual', aspectratio: { x: 1.35, y: 1.35, z: NARROW() ? 0.85 : 0.72 },
+      xaxis: Object.assign(ax('delta'), { tickvals: TICKS.vals, ticktext: TICKS.text, range: [X[0], X[X.length - 1]] }),
+      yaxis: Object.assign(ax('days to expiry'), { range: [Math.max(0, Math.min(...dtes) - 4), Math.max(...dtes) + 3] }),
+      zaxis: Object.assign(ax('implied vol %'), { range: zr }) } }), { displayModeBar: false, responsive: true });
+  linkCamera(p);
+  surfaceCaption(p, d, E, false);
+}
+
+function surfaceCaption(p, d, E, flat) {
+  const atm30 = (() => { const a = E.map(e => [e.dte, at(e.iv, 0.5)]); for (let i = 0; i < a.length - 1; i++) if (a[i][0] <= 30 && a[i + 1][0] >= 30) { const f = (30 - a[i][0]) / (a[i + 1][0] - a[i][0]); return a[i][1] * (1 - f) + a[i + 1][1] * f; } return null; })();
+  $('cap1' + p.sfx).innerHTML = `<b>Figure ${figNo(1, p)}.</b> ${flat ? 'Shown as a flat contour map because this browser has 3D graphics turned off. ' : ''}Implied volatility at the close on ${fmtDate(DATES[p.cur])}, across ${E.length} Friday expiries. Low strikes sit on the left and carry higher volatility, which is the put skew. Fitted smiles stay within ${d.fit_max.toFixed(2)} vol points of the ${d.n_pts.toLocaleString()} computed options (average gap ${d.fit_mean.toFixed(2)}).${rangeNote(d)}`
+    + (d.metrics ? ` ${d.metrics}` : (atm30 === null ? '' : ` At-the-money vol at 30 days is about ${atm30.toFixed(1)}%.`))
+    + (d.tv_drops ? ` Total variance falls with longer expiry at ${d.tv_drops} grid points, which should not happen and points to unreliable quotes.` : '')
+    + (d.dropped.length ? ` Left out because their options do not span the delta range drawn: ${d.dropped.map(x => fmtDate(x[0])).join(', ')}.` : '');
+  const cols = TICK_C;
+  $('tbl1' + p.sfx).innerHTML = '<table><thead><tr><th>Expiry</th><th>Days</th>' + TICKS.text.map(t => `<th>${t}</th>`).join('') + '</tr></thead><tbody>' +
+    E.map(e => `<tr><td>${fmtDate(e.exp)}</td><td>${e.dte}</td>` + cols.map(k => `<td>${at(e.iv, k).toFixed(2)}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
+}
+
+function drawSmiles(p, c, zr) {
+  const E = DATA.dates[DATES[p.cur]].expiries, pick = [];
+  (DATA.smile_targets || [14, 28, 45, 63, 91, 126, 168]).forEach(w => { const e = E.reduce((a, b) => Math.abs(b.dte - w) < Math.abs(a.dte - w) ? b : a); if (!pick.includes(e)) pick.push(e); });
+  pick.sort((a, b) => a.dte - b.dte);
+  const tr = pick.map((e, i) => ({ type: 'scatter', mode: 'lines', x: X, y: e.iv, name: e.dte + ' days', line: { width: 2, color: mix(c.ordA, c.ordB, pick.length > 1 ? i / (pick.length - 1) : 1) },
+    customdata: e.K.map((k, j) => [XLAB[j], k]), hovertemplate: e.dte + ' days · %{customdata[0]}<br>strike ≈ %{customdata[1]:,}<br><b>IV %{y:.1f}%</b><extra></extra>' }));
+  const first = pick[0], last = pick[pick.length - 1], end = e => e.iv[e.iv.length - 1];
+  const ends = Math.abs(end(first) - end(last)) > (zr[1] - zr[0]) * 0.05 ? [first, last] : [last];
+  Plotly.react('smiles' + p.sfx, tr, Object.assign(base(c), { margin: { l: 46, r: 58, t: 14, b: 40 }, hovermode: 'closest',
+    legend: { orientation: 'h', y: 1.0, yanchor: 'bottom', x: 0, font: { size: 11 }, traceorder: 'normal' },
+    xaxis: { tickvals: TICKS.vals, ticktext: TICKS.text, range: [X[0] - 0.01, X[X.length - 1] + 0.01], gridcolor: c.grid, linecolor: c.rule, zeroline: false, tickfont: { size: 11 } },
+    yaxis: { range: zr, ticksuffix: '%', gridcolor: c.grid, zeroline: false, tickfont: { family: css('--mono'), size: 11 } },
+    annotations: ends.map(e => ({ x: X[X.length - 1], y: end(e), xanchor: 'left', xshift: 6, showarrow: false, text: e.dte + ' days', font: { size: 11, color: c.muted } })) }),
+    { displayModeBar: false, responsive: true });
+  $('cap2' + p.sfx).innerHTML = `<b>Figure ${figNo(2, p)}.</b> Smiles for ${pick.length} of the expiries on ${fmtDate(DATES[p.cur])}, with the shortest expiry in the faintest line. Plotted against delta, smiles of different expiries can be compared on one scale.`;
+}
+
+function drawTerm(c, idx) {
+  const cols = idx.length > 1 ? [c.before, c.after] : [c.before];
+  const terms = idx.map(i => DATA.dates[DATES[i]].term.filter(q => q[0] >= 1));
+  const near = idx.length > 1 && gapDays(DATES[idx[0]], DATES[idx[1]]) < 300;
+  const names = idx.map(i => (near ? shortDate(DATES[i]) : fmtDate(DATES[i])) + (DATA.dates[DATES[i]].label ? ', ' + DATA.dates[DATES[i]].label : ''));
+  const tr = terms.map((t, n) => ({ type: 'scatter', mode: 'lines+markers', x: t.map(q => q[0]), y: t.map(q => q[1]), name: names[n], customdata: t.map(q => fmtDate(q[2])),
+    line: { width: 2, color: cols[n] }, marker: { size: 6, color: cols[n], line: { width: 1.5, color: c.panel } },
+    hovertemplate: names[n] + '<br>expires %{customdata} · %{x} days<br><b>ATM IV %{y:.1f}%</b><extra></extra>' }));
+  Plotly.react('term', tr, Object.assign(base(c), { margin: { l: 46, r: 16, t: 14, b: 44 }, hovermode: 'closest', showlegend: true,
+    legend: { orientation: 'h', y: 1.0, yanchor: 'bottom', x: 0, font: { size: 11 } },
+    xaxis: { type: 'log', title: { text: 'days to expiry (log scale)', font: { size: 11 } }, tickvals: [1, 2, 5, 10, 20, 50, 100, 180], gridcolor: c.grid, linecolor: c.rule, zeroline: false, tickfont: { family: css('--mono'), size: 11 } },
+    yaxis: { ticksuffix: '%', gridcolor: c.grid, zeroline: false, tickfont: { family: css('--mono'), size: 11 } } }),
+    { displayModeBar: false, responsive: true });
+  let cap = `<b>Figure 3.</b> At-the-money implied vol by expiry, every expiry out to six months, on ${idx.map(i => named(DATES[i])).join(' and on ')}.`;
+  if (idx.length > 1 && terms[0].length && terms[1].length) cap += ` The shortest expiry priced ${terms[0][0][1].toFixed(1)}% on the first day and ${terms[1][0][1].toFixed(1)}% on the second. One pair of days shows the mechanism and proves nothing about such days in general.`;
+  $('cap3').innerHTML = cap;
+  const head = i => near ? shortDate(DATES[i]) : fmtDate(DATES[i]);
+  if (near) {
+    const byExp = terms.map(t => new Map(t.map(q => [q[2], q]))), exps = [...new Set(terms.flatMap(t => t.map(q => q[2])))].sort();
+    $('tbl3').innerHTML = '<table><thead><tr><th>Expiry</th>' + idx.map(i => `<th>${head(i)}</th>`).join('') + '</tr></thead><tbody>' +
+      exps.map(x => `<tr><td>${fmtDate(x)}</td>` + byExp.map(m => `<td>${m.has(x) ? m.get(x)[1].toFixed(2) : '–'}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
+  } else {
+    // Dates far apart share no expiries, so line the two up by days to expiry instead.
+    const byDte = terms.map(t => new Map(t.map(q => [q[0], q]))), dtes = [...new Set(terms.flatMap(t => t.map(q => q[0])))].sort((a, b) => a - b);
+    $('tbl3').innerHTML = '<table><thead><tr><th>Days to expiry</th>' + idx.map(i => `<th>${head(i)}</th>`).join('') + '</tr></thead><tbody>' +
+      dtes.map(x => `<tr><td>${x}</td>` + byDte.map(m => `<td>${m.has(x) ? m.get(x)[1].toFixed(2) : '–'}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
+  }
+}
+
+function fail(id, err) { const el = $(id); el.textContent = 'This chart could not be drawn: ' + err.message; el.style.padding = '16px'; }
+
+function render() {
+  $('panes').classList.toggle('split', split);
+  $('paneB').hidden = !split;
+  $('splitOpts').hidden = !split;
+  $('split').setAttribute('aria-pressed', String(split));
+  active().forEach(p => {
+    const d = DATA.dates[DATES[p.cur]];
+    $('note' + p.sfx).innerHTML = `Close on ${fmtDate(DATES[p.cur])}${d.label ? ', ' + d.label : ''}. Drawn from the ${d.range_label}.`
+      + (d.full_range ? '' : ' <strong>Narrower than the usual 10-delta put to 10-delta call: fewer than half of the expiries have quotes that reach those ends.</strong>')
+      + (d.half_day ? ' <strong>Half-day session: quotes are from the 13:15 close.</strong>' : '');
+  });
+  if (typeof Plotly === 'undefined') { document.querySelectorAll('.plot').forEach(e => { e.textContent = 'The charting library did not load, so this chart cannot be drawn. Keep plotly-strict.min.js in the same folder as this page.'; e.style.padding = '16px'; }); return; }
+  const c = { fg: css('--fg'), muted: css('--muted'), rule: css('--rule'), grid: css('--grid'), panel: css('--panel'), lo: css('--seq-lo'), mid: css('--seq-mid'), hi: css('--seq-hi'),
+    ordA: css('--ord-a'), ordB: css('--ord-b'), before: css('--before'), after: css('--after') };
+  c.contour = mix(c.panel, c.fg, 0.35);
+  // Single view: compare with the neighbouring snapshot. Split view: compare the two chosen dates.
+  const idx = split ? [...new Set(panes.map(p => p.cur))].sort((a, b) => a - b) : pair(panes[0].cur);
+  const shared = volRange(idx);
+  active().forEach(p => {
+    const d = DATA.dates[DATES[p.cur]], zr = (!split || sameScale) ? shared : volRange([p.cur]);
+    setGrid(d);
+    try { drawSmiles(p, c, zr); } catch (err) { fail('smiles' + p.sfx, err); }
+    try { drawSurface(p, c, zr); } catch (err) {
+      try { Plotly.purge('surface' + p.sfx); $('surface' + p.sfx)._mwLinked = false; drawFlat(p, c, d.expiries, zr); surfaceCaption(p, d, d.expiries, true); } catch (e2) { fail('surface' + p.sfx, err); }
+    }
+  });
+  try { drawTerm(c, idx); } catch (err) { fail('term', err); }
+}
+
+function resetView() { if (typeof Plotly === 'undefined' || !HAS_GL) return; active().forEach(p => { const gd = $('surface' + p.sfx); if (gd._fullLayout && gd._fullLayout.scene) Plotly.relayout(gd, { 'scene.camera': cam() }); }); }
+function resizeAll() { if (typeof Plotly === 'undefined') return; document.querySelectorAll('.plot').forEach(el => { if (el.offsetParent !== null && el._fullLayout) Plotly.Plots.resize(el); }); }
+
+function syncPicker(p) {
+  document.querySelectorAll('#dates' + p.sfx + ' .seg button').forEach((b, j) => b.setAttribute('aria-pressed', String(j === p.cur)));
+  const sel = $('dateSel' + p.sfx); if (sel) sel.value = String(p.cur);
+}
+function setDate(p, i) { p.cur = Math.max(0, Math.min(DATES.length - 1, i)); syncPicker(p); render(); }
+function buildPicker(p) {
+  const box = $('dates' + p.sfx), text = i => shortDate(DATES[i]) + (DATA.dates[DATES[i]].label ? ' · ' + DATA.dates[DATES[i]].label : '');
+  const which = p.sfx ? 'Second date' : 'First date';
+  if (DATES.length <= 4) {
+    box.innerHTML = `<div class="seg" role="group" aria-label="${which}">` + DATES.map((d, i) => `<button type="button" id="date${p.sfx}${i}" aria-pressed="false">${text(i)}</button>`).join('') + '</div>';
+    box.querySelectorAll('button').forEach((b, i) => b.addEventListener('click', () => setDate(p, i)));
+  } else {
+    box.innerHTML = `<div class="picker"><button type="button" id="prev${p.sfx}" aria-label="Earlier date">‹</button><select id="dateSel${p.sfx}" aria-label="${which}">` +
+      DATES.map((d, i) => `<option value="${i}">${fmtDate(d)}${DATA.dates[d].label ? ' · ' + DATA.dates[d].label : ''}</option>`).join('') + `</select><button type="button" id="next${p.sfx}" aria-label="Later date">›</button></div>`;
+    $('dateSel' + p.sfx).addEventListener('change', e => setDate(p, +e.target.value));
+    $('prev' + p.sfx).addEventListener('click', () => setDate(p, p.cur - 1));
+    $('next' + p.sfx).addEventListener('click', () => setDate(p, p.cur + 1));
+  }
+  syncPicker(p);
+}
+
+// Opening the split puts the earlier date on the left: the neighbouring snapshot when there is one, else the date before.
+function setSplit(on) {
+  split = on && DATES.length > 1;
+  if (split) {
+    const a = panes[0].cur, pr = pair(a), other = pr.length === 2 ? (pr[0] === a ? pr[1] : pr[0]) : (a > 0 ? a - 1 : a + 1);
+    panes[0].cur = Math.min(a, other); panes[1].cur = Math.max(a, other);
+    panes.forEach(syncPicker);
+  }
+  try { localStorage.setItem('volPageSplit', split ? '1' : '0'); } catch (e) {}
+  render();
+  requestAnimationFrame(() => { resizeAll(); resetView(); });
+}
+
+$('foot').textContent = `Built ${DATA.generated} from ${DATES.length} snapshot date${DATES.length === 1 ? '' : 's'} of SPXW quotes at the 16:15 ET options close (13:15 on half days). Each expiry's smile is a cubic fitted through that expiry's own computed implied vols; the surface joins neighbouring expiries with straight lines and is not extrapolated. Private working draft: the underlying quotes are licensed for personal use, so this page is not for public sharing. For education only, not investment advice.`;
+$('split').disabled = DATES.length < 2;
+$('split').addEventListener('click', () => setSplit(!split));
+$('same').addEventListener('change', e => { sameScale = e.target.checked; render(); });
+$('link').addEventListener('change', e => { linkCam = e.target.checked; });
+$('pts').addEventListener('change', e => { showPts = e.target.checked; render(); });
+$('reset').addEventListener('click', resetView);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+panes.forEach(buildPicker);
+let startSplit = false;
+try { startSplit = localStorage.getItem('volPageSplit') === '1'; } catch (e) {}
+if (startSplit && DATES.length > 1) setSplit(true); else render();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+</script>
