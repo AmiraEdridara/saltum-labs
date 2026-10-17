@@ -3,6 +3,7 @@ field for 4 event pairs, shows flags next to the chart, falls back to a flat con
 uses the stored change only for event and control pairs, fits Split view and phone width, and leaves no
 browser processes running."""
 import json
+import math
 import subprocess
 
 import pytest
@@ -29,6 +30,7 @@ EXTRACT = r"""(() => {
     days[key] = {
       type: fit.type, x: Array.from(fit.x), y: Array.from(fit.y), z: fit.z.map((r) => Array.from(r)),
       strikes: fit.customdata.map((r) => r.map((c) => c[1])), exps: fit.customdata.map((r) => r[0][3]),
+      text: fit.text ? fit.text.map((r) => Array.from(r)) : null, hover: fit.hovertemplate,
       pts: pts ? pts.customdata.map((c, i) => [c[4], pts.z[i], c[1], c[3], c[3 - 1]]) : null,
       caption: txt(pane.querySelector(`[data-caption="${key}"]`)),
       head: txt(pane.querySelector(`.day-head[data-day="${key}"]`)),
@@ -158,6 +160,22 @@ def test_control_pair_and_other_pair(browser):
     for m in ("atm30", "rr25_30", "wing10_30"):
         diff = os_["skew"][f"d_{m}"]
         assert diff["computed"] and diff["value"] == pytest.approx(os_["skew"][f"d2.{m}"]["value"] - os_["skew"][f"d1.{m}"]["value"], abs=1e-12)
+
+
+@pytest.mark.parametrize("d1, d2, name", PAIRS)
+def test_surface_hover_labels_are_filled(pages, d1, d2, name):
+    """Plotly 2.35 leaves %{customdata[...]} unfilled in surface hovers (2026-10-17): each point needs its own text label,
+    delta · expiry · strike, and the template must use only %{text}, %{y} and %{z}."""
+    for key in ("d1", "d2"):
+        v = pages[name]["value"]["days"][key]
+        assert "customdata" not in v["hover"] and "%{text}" in v["hover"] and "%{z:.1f}" in v["hover"], v["hover"]
+        assert len(v["text"]) == len(v["y"]) and all(len(r) == len(v["x"]) for r in v["text"])
+        for i, row in enumerate(v["text"]):
+            exp = _fmt(v["exps"][i])
+            for j, label in enumerate(row):
+                delta, when, strike = label.split(" · ")
+                assert when == exp and strike == f"strike ≈ {math.floor(v['strikes'][i][j] + 0.5):,}", label   # Math.round
+                assert delta and "%" not in label and "{" not in label, label
 
 
 def test_flat_contour_fallback_without_3d(browser):

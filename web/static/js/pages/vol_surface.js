@@ -69,8 +69,11 @@ const base = () => ({ paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,
   font: { family: "EB Garamond, Georgia, serif", size: 13, color: C.ink },
   hoverlabel: { bgcolor: C.panel, bordercolor: C.rule, font: { family: "IBM Plex Mono, monospace", size: 12, color: C.ink } } });
 const SCALE = [[0, C.lo], [0.5, C.mid], [1, C.deep]];
-const hoverFit = "%{customdata[2]} · %{y} days<br>%{customdata[0]} · strike ≈ %{customdata[1]:,}<br><b>IV %{z:.1f}%</b> (fitted)<extra></extra>";
+// Plotly 2.35 does not fill %{customdata[...]} in surface hover labels, so each point carries a text label instead.
+const hoverFit = "%{text}<br>%{y} days · <b>IV %{z:.1f}%</b> (fitted)<extra></extra>";
 const cdata = (v) => v.E.map((e) => e.strike.map((k, j) => [v.XLAB[j], k, fmtDate(e.expiration), e.expiration]));
+const labels = (v) => v.E.map((e) => e.strike.map((k, j) =>
+  `${v.XLAB[j]} · ${fmtDate(e.expiration)} · strike ≈ ${Math.round(k).toLocaleString("en-GB")}`));
 
 function volRange(views) {
   let lo = Infinity, hi = -Infinity;
@@ -85,7 +88,7 @@ function camera(narrow) {
 
 async function drawFlat(P, el, v, zr) {
   await P.react(el, [{ type: "contour", x: v.X, y: v.E.map((e) => e.dte), z: v.E.map((e) => e.iv_pct), zmin: zr[0], zmax: zr[1],
-    customdata: cdata(v), colorscale: SCALE, line: { width: 0.5, color: mix(C.panel, C.ink, 0.35) },
+    customdata: cdata(v), text: labels(v), colorscale: SCALE, line: { width: 0.5, color: mix(C.panel, C.ink, 0.35) },
     contours: { start: zr[0], end: zr[1], size: zr[1] - zr[0] > 30 ? 5 : 1, showlabels: true, labelfont: { size: 10, color: C.ink } },
     colorbar: { title: { text: "IV %", font: { size: 11 } }, thickness: 10, outlinewidth: 0 }, hovertemplate: hoverFit }],
   Object.assign(base(), { margin: { l: 52, r: 16, t: 12, b: 44 },
@@ -98,7 +101,7 @@ async function drawSurface(P, el, v, zr, opts) {
   if (!HAS_GL) return drawFlat(P, el, v, zr);
   const span = zr[1] - zr[0], size = span > 30 ? 5 : span > 14 ? 2 : 1;
   const traces = [{ type: "surface", name: "fitted", x: v.X, y: v.E.map((e) => e.dte), z: v.E.map((e) => e.iv_pct), cmin: zr[0], cmax: zr[1],
-    customdata: cdata(v), colorscale: SCALE, showscale: opts.showScale,
+    customdata: cdata(v), text: labels(v), colorscale: SCALE, showscale: opts.showScale,
     colorbar: { title: { text: "IV %", font: { size: 11 } }, thickness: 10, len: 0.55, x: 0.98, outlinewidth: 0,
                 tickfont: { family: "IBM Plex Mono, monospace", size: 11 } },
     contours: { z: { show: true, start: Math.ceil(zr[0] / size) * size, end: zr[1], size, color: mix(C.panel, C.ink, 0.35), width: 1 } },
