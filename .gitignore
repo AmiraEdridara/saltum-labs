@@ -24,3 +24,9 @@ web/var/
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
