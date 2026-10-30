@@ -7,7 +7,7 @@ import { cached, chartFailed, h, loadPlotly, num, renderTicket, source, table } 
 const NAMES = { CPI: "CPI", NFP: "payrolls", FOMC: "FOMC decision" };       // config.VOL_PAGE_EVENT_NAMES
 const SMILE_TARGETS = [14, 28, 45, 63, 91, 126, 168];                       // the prototype's smile_targets
 const GRID_COLUMNS = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1];         // table columns: grid deltas, no interpolation
-const C = { ink: "#1E1B16", muted: "#5E574B", rule: "#D6CCB4", grid: "#E4DCC8", panel: "#FBF8EF", accent: "#1F3A9E",
+const C = { ink: "#000000", muted: "#4A463C", rule: "#D6CCB4", grid: "#E4DCC8", panel: "#F4EFE3", accent: "#1F3A9E",
             lo: "#F2EDDF", mid: "#7F8FC6", hi: "#1F3A9E", deep: "#0E1C4F" };
 const DAY_COLOR = { d1: C.ink, d2: C.accent };
 const HAS_GL = (() => { try { const k = document.createElement("canvas"); return !!(k.getContext("webgl2") || k.getContext("webgl")); } catch { return false; } })();
@@ -66,7 +66,7 @@ function pairsFrom(index) {
 
 // ------------------------------------------------------------ drawing (ported from templates/vol_page.html)
 const base = () => ({ paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-  font: { family: "EB Garamond, Georgia, serif", size: 13, color: C.ink },
+  font: { family: "Inter, Segoe UI, sans-serif", size: 13, color: C.ink },
   hoverlabel: { bgcolor: C.panel, bordercolor: C.rule, font: { family: "IBM Plex Mono, monospace", size: 12, color: C.ink } } });
 const SCALE = [[0, C.lo], [0.5, C.mid], [1, C.deep]];
 // Plotly 2.35 does not fill %{customdata[...]} in surface hover labels, so each point carries a text label instead.

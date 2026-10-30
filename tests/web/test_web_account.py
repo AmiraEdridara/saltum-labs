@@ -62,7 +62,7 @@ def test_pages_static_and_headers(client):
     assert r.status_code == 200 and "Create a free account" in r.text
     assert "default-src 'self'" in r.headers["content-security-policy"]
     for f in ("css/terminal.css", "css/fonts.css", "js/app.js", "js/state.js", "js/pages.js", "js/api.js",
-              "js/login.js", "fonts/EBGaramond.woff2", "fonts/CormorantSC-600.woff2", "fonts/IBMPlexMono-400.woff2"):
+              "js/login.js", "fonts/Newsreader.woff2", "fonts/Inter.woff2", "fonts/IBMPlexMono-400.woff2"):
         assert client.get(f"/static/{f}").status_code == 200, f
     assert client.get("/docs").status_code == 404
     css = client.get("/static/css/terminal.css").text

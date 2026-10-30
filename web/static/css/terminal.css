@@ -1,15 +1,18 @@
-/* Macro Wire terminal: plain and readable. Cream paper, ink text, one cobalt accent. No ornaments. */
+/* Saltum terminal: plain and readable. Cream paper, black ink, one cobalt accent. Same type and motion as the homepage. */
 :root {
-  --paper: #f6f1e4;
-  --paper-2: #efe8d6;
-  --ink: #1e1b16;
-  --muted: #5e574b;
+  --paper: #ECE6D6;
+  --paper-2: #E3DBC6;
+  --card: #F4EFE3;
+  --ink: #000;
+  --muted: #4A463C;
   --rule: #d6ccb4;
   --accent: #1f3a9e;
   --accent-soft: #e3e6f2;
   --danger: #8a2a1c;
-  --text: "EB Garamond", Georgia, serif;
-  --heading: "Cormorant SC", "EB Garamond", Georgia, serif;
+  --text: "Inter", "Segoe UI", system-ui, sans-serif;
+  --heading: "Newsreader", Georgia, serif;
+  --hover: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --enter: 300ms cubic-bezier(0.22, 1, 0.36, 1);
   --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
   --nav-w: 11.5rem;
   --tutor-w: 21rem;
@@ -20,20 +23,21 @@ html, body { margin: 0; height: 100%; }
 body {
   background: var(--paper);
   color: var(--ink);
-  font: 18px/1.5 var(--text);
+  font: 15px/22.5px var(--text);
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3 { font-family: var(--heading); font-weight: 600; letter-spacing: 0.02em; line-height: 1.15; margin: 0 0 0.5rem; }
+h1, h2, h3 { font-family: var(--heading); font-weight: 400; letter-spacing: -0.01em; line-height: 1.15; margin: 0 0 0.5rem; }
 h1 { font-size: 1.9rem; }
 h2 { font-size: 1.45rem; }
 h3 { font-size: 1.15rem; }
 p { margin: 0 0 0.75rem; }
 a { color: var(--accent); }
 code, .num, kbd { font-family: var(--mono); font-size: 0.86em; }
-kbd { border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 0.3em; background: var(--paper-2); }
+kbd { border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 6px; padding: 0 0.3em; background: var(--paper-2); }
 button, input, select { font: inherit; color: inherit; }
 button {
-  background: transparent; border: 1px solid var(--rule); border-radius: 3px; padding: 0.2rem 0.7rem; cursor: pointer;
+  background: transparent; border: 1px solid var(--rule); border-radius: 6px; padding: 0.2rem 0.7rem; cursor: pointer;
+  transition: color var(--hover), background-color var(--hover), border-color var(--hover);
 }
 button:hover { border-color: var(--accent); }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -50,7 +54,7 @@ button.link { border: 0; padding: 0; color: var(--accent); text-decoration: unde
   display: flex; align-items: center; gap: 1.25rem; padding: 0.45rem 1rem; border-bottom: 1px solid var(--rule);
   background: var(--paper);
 }
-.brand { font-family: var(--heading); font-size: 1.35rem; font-weight: 600; letter-spacing: 0.04em; margin-right: auto;
+.brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--heading); font-size: 20px; font-weight: 500; letter-spacing: -0.01em; margin-right: auto;
          color: inherit; text-decoration: none; }
 .topbar .fact { font-size: 0.95rem; color: var(--muted); }
 .topbar .fact .num { color: var(--ink); }
@@ -71,7 +75,7 @@ button.link { border: 0; padding: 0; color: var(--accent); text-decoration: unde
 .nav ol { list-style: none; margin: 0; padding: 0; }
 .nav a {
   display: flex; justify-content: space-between; align-items: baseline; padding: 0.35rem 1rem;
-  color: var(--ink); text-decoration: none; border-left: 3px solid transparent;
+  color: var(--ink); text-decoration: none; border-left: 3px solid transparent; transition: background-color var(--hover), color var(--hover);
 }
 .nav a:hover { background: var(--paper-2); }
 .nav a[aria-current="page"] { border-left-color: var(--accent); color: var(--accent); font-weight: 600; }
@@ -92,7 +96,7 @@ button.link { border: 0; padding: 0; color: var(--accent); text-decoration: unde
 .controls-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin: 0.5rem 0; }
 .controls-row label { display: flex; gap: 0.35rem; align-items: center; }
 select, input[type="date"], input[type="email"], input[type="password"], input[type="text"] {
-  background: #fffdf7; border: 1px solid var(--rule); border-radius: 3px; padding: 0.15rem 0.4rem;
+  background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 0.15rem 0.4rem;
 }
 
 .tutor { border-left: 1px solid var(--rule); padding: 1rem; overflow-y: auto; background: var(--paper); }
@@ -120,7 +124,6 @@ table.keys td { padding: 0.2rem 0.5rem; border-bottom: 1px solid var(--rule); }
 
 /* ------------------------------------------------------------ phone width: panes stack, tutor full screen */
 @media (max-width: 720px) {
-  body { font-size: 17px; }
   .topbar { flex-wrap: wrap; gap: 0.25rem 1rem; }
   .workspace, .workspace.with-tutor { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .nav { border-right: 0; border-bottom: 1px solid var(--rule); padding: 0; overflow-x: auto; }
@@ -138,7 +141,7 @@ table.keys td { padding: 0.2rem 0.5rem; border-bottom: 1px solid var(--rule); }
 /* ------------------------------------------------------------ page content (event study and later pages) */
 .event-study > section, .event-study > figure { margin: 0 0 1.75rem; }
 .event-study h2 { border-bottom: 1px solid var(--rule); padding-bottom: 0.2rem; }
-.next-event { border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 0.75rem 1rem; background: #fbf8ef; }
+.next-event { border: 1px solid var(--rule); border-left: 3px solid var(--accent); padding: 0.75rem 1rem; background: var(--card); }
 .next-event h2 { border-bottom: 0; }
 .next-head { font-size: 1.1rem; }
 .table-wrap { overflow-x: auto; max-width: 100%; margin: 0.5rem 0; }
@@ -158,7 +161,7 @@ button.sort:hover { color: var(--accent); }
 .small { font-size: 0.88rem; }
 .note { font-size: 0.95rem; }
 figure.chart { margin: 0; }
-figure.chart figcaption { font-family: var(--heading); font-size: 1.2rem; font-weight: 600; margin-bottom: 0.25rem; }
+figure.chart figcaption { font-family: var(--heading); font-size: 1.3rem; font-weight: 400; margin-bottom: 0.25rem; }
 .plot { width: 100%; min-height: 320px; }
 details { margin: 0.4rem 0; }
 details > summary { cursor: pointer; color: var(--accent); }
@@ -190,7 +193,7 @@ dl.defs dd { margin: 0; }
 .vs-picker .controls-row { gap: 0.5rem 1rem; }
 .date-pick { display: inline-flex; gap: 0.25rem; align-items: center; }
 .date-pick select, .vs-picker select { max-width: min(26rem, 80vw); }
-.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
 .seg button { border: 0; border-radius: 0; border-right: 1px solid var(--rule); padding: 0.15rem 0.7rem; }
 .seg button:last-child { border-right: 0; }
 .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
@@ -243,14 +246,14 @@ table.index td.flagcell { color: var(--danger); white-space: nowrap; }
 /* ------------------------------------------------------------ tutor panel (page 4) */
 .tutor { display: flex; flex-direction: column; gap: 0.5rem; }
 .tutor-log { flex: 1 1 auto; overflow-y: auto; min-height: 6rem; display: flex; flex-direction: column; gap: 0.6rem; }
-.tutor-msg { padding: 0.5rem 0.7rem; border: 1px solid var(--rule); background: #fbf8ef; font-size: 0.97rem; }
+.tutor-msg { padding: 0.5rem 0.7rem; border: 1px solid var(--rule); background: var(--card); font-size: 0.97rem; }
 .tutor-msg.user { background: var(--accent-soft); border-color: #c9cfe6; }
 .tutor-msg.unverified, .tutor-msg[data-status="error"] { border-left: 3px solid var(--danger); }
 .tutor-msg p { margin: 0 0 0.4rem; }
 .tutor-msg ul { margin: 0 0 0.4rem; padding-left: 1.1rem; }
-.tutor-msg .who { font-family: var(--heading); font-weight: 600; color: var(--muted); margin-bottom: 0.15rem; }
+.tutor-msg .who { font-family: var(--mono); font-size: 0.75rem; font-weight: 400; color: var(--muted); margin-bottom: 0.15rem; }
 .tutor-msg .source { margin: 0; }
-.tutor-form textarea { width: 100%; resize: vertical; background: #fffdf7; border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.45rem; font: inherit; }
+.tutor-form textarea { width: 100%; resize: vertical; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 0.3rem 0.45rem; font: inherit; }
 .tutor-sees summary { font-size: 0.9rem; }
 
 /* Tutor panel: resize handle on its left edge, and the saved-sessions list at its top. */
@@ -281,7 +284,14 @@ body.resizing .plot { pointer-events: none; }
 /* Frozen v1 vs live (daily update) */
 .v1-note { color: var(--muted); }
 .live-badge { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 0.25rem; vertical-align: 0.1em; }
+  color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; padding: 0 0.25rem; vertical-align: 0.1em; }
 .data-label { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--rule); padding-left: 0.6rem; }
 .data-label.live { border-left-color: var(--accent); color: var(--ink); }
 .provisional { font-style: italic; }
+
+/* Entries: the panel, menu or dialog that opens. Hovers are set on each control above. */
+.tutor, .account-menu, dialog[open] { animation: enter var(--enter); }
+@keyframes enter { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

@@ -13,7 +13,7 @@ const DEFINITIONS = [
   ["Premium", "Implied move minus baseline"],
   ["Variance premium", "Implied move squared minus baseline squared"],
 ];
-const COLORS = { accent: "#1F3A9E", ink: "#1E1B16", muted: "#8A8273", rule: "#D6CCB4" };
+const COLORS = { accent: "#1F3A9E", ink: "#000000", muted: "#8A8273", rule: "#D6CCB4" };
 
 const n = (v) => h("span", { class: "num" }, num(v, 3));
 function longDate(iso) {
@@ -99,7 +99,7 @@ function figureBox(id, title, numbers) {
 
 const layoutBase = (ytitle) => ({
   paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", margin: { l: 52, r: 12, t: 8, b: 40 },
-  font: { family: "EB Garamond, Georgia, serif", size: 14, color: COLORS.ink }, height: 320,
+  font: { family: "Inter, Segoe UI, sans-serif", size: 14, color: COLORS.ink }, height: 320,
   xaxis: { gridcolor: COLORS.rule, linecolor: COLORS.rule, tickfont: { family: "IBM Plex Mono, monospace", size: 11 } },
   yaxis: { title: { text: ytitle }, gridcolor: COLORS.rule, zerolinecolor: COLORS.muted,
            tickfont: { family: "IBM Plex Mono, monospace", size: 11 } },

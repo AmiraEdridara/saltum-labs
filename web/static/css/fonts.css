@@ -1,18 +1,10 @@
-/* Saved once from Google Fonts (latin subset). SIL Open Font License: see ../fonts/OFL-*.txt */
-@font-face { font-family: "EB Garamond"; font-style: normal; font-weight: 400 600; font-display: swap;
-  src: url("../fonts/EBGaramond.woff2") format("woff2"); }
-@font-face { font-family: "EB Garamond"; font-style: italic; font-weight: 400; font-display: swap;
-  src: url("../fonts/EBGaramond-Italic.woff2") format("woff2"); }
-@font-face { font-family: "Cormorant SC"; font-style: normal; font-weight: 500; font-display: swap;
-  src: url("../fonts/CormorantSC-500.woff2") format("woff2"); }
-@font-face { font-family: "Cormorant SC"; font-style: normal; font-weight: 600; font-display: swap;
-  src: url("../fonts/CormorantSC-600.woff2") format("woff2"); }
+/* Self-hosted, so the security policy stays 'self' only. Latin subset, from @fontsource-variable 5.3.0 (Newsreader, Inter)
+   and Google Fonts (IBM Plex Mono). SIL Open Font License: see ../fonts/OFL-*.txt */
+@font-face { font-family: "Newsreader"; font-style: normal; font-weight: 200 800; font-display: swap;
+  src: url("../fonts/Newsreader.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url("../fonts/Inter.woff2") format("woff2"); }
 @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap;
   src: url("../fonts/IBMPlexMono-400.woff2") format("woff2"); }
 @font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap;
   src: url("../fonts/IBMPlexMono-500.woff2") format("woff2"); }
-/* Source Sans 3: saved once from the @fontsource/source-sans-3 5.0.12 package (latin subset). OFL: ../fonts/OFL-SourceSans3.txt */
-@font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 400; font-display: swap;
-  src: url("../fonts/SourceSans3-400.woff2") format("woff2"); }
-@font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 600; font-display: swap;
-  src: url("../fonts/SourceSans3-600.woff2") format("woff2"); }

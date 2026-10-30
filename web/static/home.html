@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Macro Wire · How S&amp;P 500 options price CPI, FOMC and payrolls</title>
+  <title>Saltum · How S&amp;P 500 options price CPI, FOMC and payrolls</title>
   <meta name="description" content="An educational terminal on how S&amp;P 500 options priced CPI, FOMC and payrolls days. Not signals, not advice.">
-  <link rel="icon" href="data:,">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/fonts.css">
   <link rel="stylesheet" href="/static/css/home.css">
   <script type="module" src="/static/js/home.js"></script>
@@ -14,13 +14,9 @@
 <a class="skip" href="#main">Skip to the content</a>
 
 <header class="masthead">
-  <div class="masthead-line">
-    <span>Education only · not advice</span>
-    <span>v1 data to <span class="num" data-src="v1_end" data-fmt="text">…</span></span>
-    <span>Local edition</span>
-  </div>
   <div class="masthead-title">
-    <a class="wordmark" href="/">Macro Wire</a>
+    <!-- The medallion goes inside .wordmark, before the name: up to 28 px tall. -->
+    <a class="wordmark" href="/">Saltum</a>
     <nav aria-label="Homepage">
       <a href="#tour">Tour</a>
       <a href="#method">Method</a>
@@ -29,6 +25,11 @@
       <a href="/terminal" class="nav-terminal">Open the terminal</a>
     </nav>
   </div>
+  <div class="masthead-line">
+    <span>Education only · not advice</span>
+    <span>v1 data to <span class="num" data-src="v1_end" data-fmt="text">…</span></span>
+    <span>Local edition</span>
+  </div>
 </header>
 
 <main id="main">
@@ -36,6 +37,7 @@
   <section id="hero" class="hero" aria-labelledby="hero-title">
     <p class="kicker">An options terminal for learning</p>
     <h1 id="hero-title">How S&amp;P 500 options price CPI, FOMC and payrolls.</h1>
+    <p class="tagline">Natura non facit saltum. <span>Markets do.</span></p>
     <p class="subline">An educational terminal. Not signals, not advice.</p>
     <p class="actions">
       <a class="button primary" href="/terminal">Open the terminal</a>
@@ -138,7 +140,7 @@
     <div class="columns">
       <div>
         <h3>Option chains</h3>
-        <p>ThetaData SPX and SPXW quotes at the 16:15 ET options close (13:15 on half days), from 2020 on.</p>
+        <p>SPX and SPXW option quotes at the 16:15 ET options close (13:15 on half days), from 2020 on.</p>
         <h3>Implied and actual move</h3>
         <p>The implied move is the at-the-money straddle at the previous 16:15 close, as a share of the forward. The
           actual move is the change from that forward to the release-day close.</p>
@@ -261,7 +263,7 @@
 <!-- 10. Footer -->
 <footer id="footer" class="footer">
   <p><strong>Educational use only. Not financial advice.</strong> Past results describe one sample of market history.</p>
-  <p>Option data: ThetaData, licensed for personal use and not redistributed. S&amp;P 500 closes, Treasury bill
+  <p>S&amp;P 500 closes, Treasury bill
     yields and VIX: FRED, Federal Reserve Bank of St. Louis.</p>
   <p>Local version, running on this computer only · v1 data to <span class="num" data-src="v1_end" data-fmt="text">…</span></p>
 </footer>
