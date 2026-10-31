@@ -55,7 +55,7 @@ export function renderPage(container, paneId, paneState, ctx) {
 
   if (p.id === "help") {
     container.append(el("p", {}, "Every page shows the source table, n and the main caveat beside each number. "
-                                  + "Saltum is for education only and is not advice."));
+                                  + "Saltum Labs is for education only and is not advice."));
     container.append(el("h2", {}, "Keyboard shortcuts"), ctx.keysTable());
     return;
   }

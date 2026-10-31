@@ -89,7 +89,7 @@ function render({ panes = true } = {}) {
     const dt = document.createElement("dt"), dd = document.createElement("dd");
     dt.textContent = k; dd.textContent = v; tc.append(dt, dd);
   }
-  document.title = `Saltum · ${page(pane.page).title}`;
+  document.title = `Saltum Labs · ${page(pane.page).title}`;
 }
 
 // Switch a pane to a page; a Vol surface page without dates starts on the latest event pair.

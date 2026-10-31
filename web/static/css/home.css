@@ -183,7 +183,7 @@ svg .grid { stroke: var(--rule); stroke-width: 1; }
 .footer strong { color: var(--ink); }
 
 /* ---------------------------------------------------------------- phone width */
-@media (max-width: 1000px) {
+@media (max-width: 1199px) {
   .cards { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -197,7 +197,9 @@ svg .grid { stroke: var(--rule); stroke-width: 1; }
   .columns, .claims, .next-list, .cards, .plans { grid-template-columns: minmax(0, 1fr); }
   .step { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .who { padding-top: 0; }
-  .figures, .mini-table { font-size: 0.82rem; }
+  .figures, .mini-table { font-size: 0.78rem; }
+  .figures { display: table; table-layout: fixed; }
+  .figures td, .figures th { white-space: normal; overflow-wrap: anywhere; }
   .figures th, .figures td, .mini-table th, .mini-table td { padding: 5px 5px; }
   .card { padding: 16px 12px; }
 }

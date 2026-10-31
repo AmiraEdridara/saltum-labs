@@ -3,30 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Saltum · Coming soon</title>
+  <title>Saltum Labs · Coming soon</title>
   <meta name="description" content="Natura non facit saltum. Markets do. Coming soon.">
   <meta name="robots" content="noindex">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/Newsreader.woff2" as="font" type="font/woff2" crossorigin>
   <style>
+    /* Fonts are self-hosted. SIL Open Font License: see /fonts/OFL-*.txt */
+    @font-face { font-family: "Newsreader"; font-weight: 200 800; font-display: swap; src: url("/fonts/Newsreader.woff2") format("woff2"); }
+    @font-face { font-family: "Inter"; font-weight: 100 900; font-display: swap; src: url("/fonts/Inter.woff2") format("woff2"); }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body {
       margin: 0; display: flex; flex-direction: column; background: #ECE6D6; color: #000;
-      font: 16px/1.5 system-ui, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased;
+      font: 16px/1.5 "Inter", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased;
     }
-    header { padding: 12px 24px; border-bottom: 1px solid #d6ccb4; font: 500 19px/1.2 Georgia, "Times New Roman", serif; }
-    main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 16px; text-align: center; }
-    h1 { margin: 0; font: 400 clamp(38px, 6vw, 68px)/1.05 Georgia, "Times New Roman", serif; letter-spacing: -0.02em; }
+    header { display: flex; align-items: center; min-height: 44px; padding: 4px 24px; border-bottom: 1px solid #D6CCB4; font: 500 20px/1 "Newsreader", Georgia, serif; letter-spacing: -0.01em; }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 16px; text-align: center; }
+    h1 { margin: 0; max-width: 16ch; font: 400 clamp(38px, 6vw, 68px)/1.02 "Newsreader", Georgia, serif; letter-spacing: -0.02em; }
     h1 span { color: #1F3A9E; }
-    p { margin: 24px 0 0; font-size: 18px; color: #1F3A9E; font-weight: 500; }
-    footer { padding: 16px; text-align: center; font-size: 13px; }
+    .soon { margin: 32px 0 0; font-size: 15px; font-weight: 500; color: #1F3A9E; }
+    footer { padding: 16px; text-align: center; font-size: 13px; color: #4A463C; }
   </style>
 </head>
 <body>
-  <header>Saltum</header>
+  <header>Saltum Labs</header>
   <main>
     <h1>Natura non facit saltum. <span>Markets do.</span></h1>
-    <p>Coming soon</p>
+    <p class="soon">Coming soon</p>
   </main>
   <footer>Education only, not advice.</footer>
 </body>
