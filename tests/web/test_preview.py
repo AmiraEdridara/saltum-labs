@@ -38,7 +38,9 @@ def test_no_public_file_names_the_data_provider_or_the_real_v1_date(client):
 def test_the_credit_comes_with_the_login(client):
     assert client.get("/account/me").status_code == 401
     sign_up(client)
-    assert client.get("/account/me").json()["footer"] == list(settings.TERMINAL_FOOTER) and "ThetaData" in settings.TERMINAL_FOOTER[0]
+    me = client.get("/account/me").json()
+    assert me["footer"] == list(settings.TERMINAL_FOOTER) and "ThetaData" in settings.TERMINAL_FOOTER[0]
+    assert me["wording"] == settings.TERMINAL_WORDING and me["wording"]["later"] == "2023-06 to now"
 
 
 # ---------------------------------------------------------------- the sample file

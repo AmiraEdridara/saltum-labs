@@ -1,6 +1,7 @@
 """The /api proxy: refuses logged-out requests, adds the token server-side, and never shows it."""
 import pytest
 
+from web import settings
 from webutil import TOKEN, sign_up
 
 API_URLS = ["/api/dates", "/api/events?type=CPI&period=both", "/api/events/2026-09-11", "/api/events/index",
@@ -60,3 +61,15 @@ def test_api_down_gives_a_clear_502(client, web):
     web.state.api_transport = Down()
     r = client.get("/api/dates")
     assert r.status_code == 502 and "not reachable" in r.json()["error"]
+
+
+def test_the_browser_uses_period_ids_and_only_the_server_knows_the_dates(client):
+    assert client.get("/api/events?type=CPI&period=earlier").status_code == 401
+    sign_up(client)
+    for neutral, real in settings.PERIOD_IDS.items():
+        by_id, by_value = (client.get(f"/api/events?type=CPI&period={p}").json() for p in (neutral, real))
+        assert by_id["period"] == neutral and by_id["params"]["period"] == neutral and by_id == by_value
+        assert by_id["data"]["summaries"][0]["n"] > 0
+    past = client.get("/api/events/next").json()["data"]["in_the_past"]
+    assert {r["period"] for rows in past.values() for r in rows} >= set(settings.PERIOD_IDS)
+    assert "2023-06..now" not in client.get("/api/events?type=all&period=later").text

@@ -1,6 +1,6 @@
 // The terminal frame (docs/prd.md, Page 5): top bar, navigation, one or two panes, tutor panel, footer.
 import { PREVIEW, get, send } from "./api.js";
-import { cached } from "./lib.js";
+import { cached, setWords, word } from "./lib.js";
 import { initTutor } from "./tutor.js";
 import { renderPage } from "./pages.js";
 import { PAGES, PANES, page, parse, serialize, withPage, withParams } from "./state.js";
@@ -284,12 +284,12 @@ async function start() {
   if (PREVIEW) {
     document.querySelector(".brand").target = "_top";
     document.querySelector(".account").classList.add("hidden");
-    document.querySelector(".v1-note").classList.add("hidden");
     document.body.classList.add("is-preview");
     $("sample-tag").classList.remove("hidden");
   }
   me = await get("/account/me");
   fillFooter(me.footer);
+  setWords(me.wording);
   $("account-button").textContent = me.email;
   $("acct-email").textContent = me.email;
   $("acct-plan").textContent = me.plan === "tutor_plus" ? "Tutor plus" : "Student (free)";
@@ -315,7 +315,7 @@ async function start() {
     dates.v1End = d.v1_end;
     dates.loaded = true;
     $("latest-close").textContent = dates.last;
-    $("v1-end").textContent = d.v1_end;
+    if (!PREVIEW) $("data-note").replaceChildren(`· ${word("data_end")} `, Object.assign(document.createElement("span"), { className: "num", textContent: d.v1_end }));
     checkUpdate(dates.last);
     // Vol surface panes without dates start on the latest event pair: the day before and the event day.
     dates.latestPair = latestEventPair(d.data.dates);

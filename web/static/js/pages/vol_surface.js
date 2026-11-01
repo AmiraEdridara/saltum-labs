@@ -2,7 +2,7 @@
 // Two dates; by default the day before an event and the event day. Every number comes from the API; the
 // browser only formats, picks which expiries to draw, and takes the difference of two days' metrics for a
 // pair that has no stored change.
-import { cached, chartFailed, h, loadPlotly, num, plain, renderTicket, source, table } from "../lib.js";
+import { cached, chartFailed, h, loadPlotly, num, plain, renderTicket, source, table, word } from "../lib.js";
 
 const NAMES = { CPI: "CPI", NFP: "payrolls", FOMC: "FOMC decision" };       // config.VOL_PAGE_EVENT_NAMES
 const SMILE_TARGETS = [14, 28, 45, 63, 91, 126, 168];                       // the prototype's smile_targets
@@ -27,7 +27,7 @@ const gapDays = (a, b) => Math.round((utc(b) - utc(a)) / 864e5);
 const dlabel = (c) => (c > 0.505 ? Math.round((1 - c) * 100) + "Δ put" : c < 0.495 ? Math.round(c * 100) + "Δ call" : "ATM");
 const f2 = (v) => (v === null || v === undefined ? "n/a" : Number(v).toFixed(2));
 // The prototype's metrics sentence (vol_page.py), from the API's surface_metrics row.
-const metricsText = (m) => `${plain("Skew metrics (README, Stage 5)", "Skew metrics")}: at 30 days, ATM vol ${f2(m.atm30)}%, 25-delta risk reversal ${f2(m.rr25_30)} `
+const metricsText = (m) => `${plain(word("skew_title"), "Skew metrics")}: at 30 days, ATM vol ${f2(m.atm30)}%, 25-delta risk reversal ${f2(m.rr25_30)} `
   + `and put wing (10-delta put minus ATM) ${f2(m.wing10_30)} vol points; at the shortest expiry (${m.short_dte} days) `
   + `${f2(m.atm_short)}%, ${f2(m.rr25_short)} and ${f2(m.wing10_short)}.`;
 function mix(a, b, t) {
@@ -226,7 +226,7 @@ function termNumbers(days) {
 function dayHead(key, date, info, s, err) {
   const title = h("h2", {}, `${key === "d1" ? "Date 1" : "Date 2"}: ${fmtDate(date)}`,
                   h("span", { class: "day-label" }, ` · ${labelFor(info) || "ordinary day"}`),
-                  info?.live ? [" ", h("span", { class: "live-badge", title: "Added by the daily update; not in findings_v1" }, "live")] : null);
+                  info?.live ? [" ", h("span", { class: "live-badge", title: word("live_badge") }, "live")] : null);
   if (err) return h("div", { class: "day-head", "data-day": key }, title, h("p", { class: "error" }, err));
   const d = s.data.day;
   const notes = [`Close on ${fmtDate(date)}. Drawn from the ${d.range_label}.`];
@@ -246,13 +246,13 @@ function skewSection(st, days, pair, skew) {
     changeFrom = skew ? skew.data.change : pair;
     fixed = changeFrom.d_atm30_fixed_strike;
     sources = [...sources, "event_skew_changes", "event_fixed_strike"];
-    note = plain(`Event pair (${pair.event_type}): the change and the fixed-strike change are the stored Stage 5 and 5b numbers.`,
+    note = plain(word("event_pair_note", { type: pair.event_type }),
                  `Event pair (${pair.event_type}): the day before and the event day, in invented sample numbers.`);
   } else if (pair) {
     changeFrom = pair;
     fixed = pair.d_atm30_fixed_strike;
     sources = [...sources, "control_pair_changes"];
-    note = plain("One of the 100 ordinary-day control pairs: the change and the fixed-strike change are the stored Stage 5b numbers.",
+    note = plain(word("control_pair_note"),
                  "An ordinary-day control pair, in invented sample numbers.");
   } else {
     note = "Not an event pair or a control pair: the change is Date 2 minus Date 1 of the numbers above. "

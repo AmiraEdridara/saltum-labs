@@ -20,6 +20,24 @@ TUTOR_PLUS_GBP_MONTH = 12                       # placeholder
 # The terminal's data credit: served with the logged-in account, so it is never in a public file.
 TERMINAL_FOOTER = ("Data: SPX and SPXW options from ThetaData; Treasury bills and VIX from FRED.",
                    "16:15 ET snapshots, 2020-01 to the latest close.")
+# The study's two periods. The browser and the public files know only the ids; the proxy turns them into the API's values.
+PERIOD_IDS = {"earlier": "2020-01..2023-05", "later": "2023-06..now"}
+# The real terminal's own wording, served with the logged-in account so that it is in no public file.
+TERMINAL_WORDING = {
+    "earlier": "2020-01 to 2023-05",
+    "later": "2023-06 to now",
+    "data_end": "v1 frozen to",
+    "results_note": "Frozen results: findings v1, data to {end}.",
+    "live_results": "Includes live data after {end} ({n} events): not in findings_v1. Premium medians use final premiums only.",
+    "findings_intro": "Did the premium hold in both periods? In the words of the frozen findings:",
+    "findings_file": "findings_v1.md",
+    "live_badge": "Added by the daily update; not in findings_v1",
+    "live_badge_index": "Added by the daily update; not in findings_v1 or the summary",
+    "summary_title": "Summary: event days against ordinary days (Stage 5b)",
+    "skew_title": "Skew metrics (README, Stage 5)",
+    "event_pair_note": "Event pair ({type}): the change and the fixed-strike change are the stored Stage 5 and 5b numbers.",
+    "control_pair_note": "One of the 100 ordinary-day control pairs: the change and the fixed-strike change are the stored Stage 5b numbers.",
+}
 
 # ------------------------------------------------------------ AI tutor (docs/prd.md, Page 4)
 TUTOR_MODEL_SIMPLE = "claude-haiku-5-5"          # definitions

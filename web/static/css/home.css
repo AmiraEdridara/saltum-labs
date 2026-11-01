@@ -61,10 +61,10 @@ p { margin: 0 0 0.8rem; }
 .masthead nav .nav-terminal { color: var(--accent); }
 
 /* ---------------------------------------------------------------- sections */
-main > section, .footer { padding: clamp(64px, 9vw, 112px) var(--gutter); border-bottom: 1px solid var(--rule); }
+main > section, .footer { padding: clamp(43px, 6vw, 75px) var(--gutter); border-bottom: 1px solid var(--rule); }
 main > section > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
 
-.hero { text-align: center; padding-top: clamp(64px, 9vw, 96px); }
+.hero { text-align: center; padding-top: clamp(43px, 6vw, 64px); }
 .hero h1 { font-size: clamp(38px, 5.2vw, 68px); line-height: 1.02; letter-spacing: -0.02em; max-width: 19ch; margin: 0 auto; }
 .tagline { font: 400 clamp(20px, 2.2vw, 26px)/1.25 var(--serif); letter-spacing: -0.01em; margin: 24px auto 0; }
 .tagline span { color: var(--accent); }
@@ -124,7 +124,7 @@ main > section > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
 .card-label { color: var(--ink-soft); border-bottom: 1px solid var(--rule); padding-bottom: 8px; }
 
 /* ---------------------------------------------------------------- pricing, footer */
-.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 28px; justify-content: center; }
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 28px; justify-content: start; }
 .plan { border: 1px solid var(--rule); border-radius: 6px; padding: 24px; background: var(--card); }
 .price { font-family: var(--serif); font-size: 2rem; margin-bottom: 0.4rem; }
 .price .num { font-family: var(--serif); font-size: 1em; }

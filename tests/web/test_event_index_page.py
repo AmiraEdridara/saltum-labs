@@ -48,7 +48,7 @@ def url(**kw):
 @pytest.fixture(scope="module")
 def pages(browser):
     cases = {"all": url(), "flagged_out": url(exclude_flagged="true"), "cpi": url(type="CPI"),
-             "early": url(period="2020-01..2023-05"), "ordinary": url(include_ordinary="true")}
+             "early": url(period="earlier"), "ordinary": url(include_ordinary="true")}
     out = browser.visit([dict(url=u, wait=READY, extract=EXTRACT) for u in cases.values()])
     return dict(zip(cases, out))
 

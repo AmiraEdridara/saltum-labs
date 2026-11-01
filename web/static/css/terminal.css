@@ -293,8 +293,8 @@ body.resizing .plot { pointer-events: none; }
   .tutor-resize { display: none; }                 /* the tutor is full screen at phone width */
 }
 
-/* Frozen v1 vs live (daily update) */
-.v1-note { color: var(--muted); }
+/* The fixed results vs the daily update */
+.data-note { color: var(--muted); }
 .live-badge { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; padding: 0 0.25rem; vertical-align: 0.1em; }
 .data-label { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--rule); padding-left: 0.6rem; }

@@ -8,11 +8,13 @@ import sys
 import pytest
 
 import config
+from web import settings
 
 sys.path.insert(0, str(config.PROJECT_DIR / "tests"))
 from test_events import PERIODS, S3  # noqa: E402
 
 TYPES = ["CPI", "NFP", "FOMC", "all"]
+PERIOD_ID = {real: neutral for neutral, real in settings.PERIOD_IDS.items()}
 NAMES = {"CPI": "CPI", "Payrolls (NFP)": "NFP", "FOMC": "FOMC"}
 READY = ("(() => { const p = document.querySelector('#pane-a .event-study');"
          " return !!p && !!p.querySelector('.headline') && p.querySelectorAll('.plot .main-svg').length >= 2; })()")
@@ -50,7 +52,7 @@ def num(s):
 
 @pytest.fixture(scope="module")
 def pages(browser):
-    visits = [dict(url=f"/terminal?a=event-study&a.type={t}&a.period={p}&split=0&tutor=0", wait=READY, extract=EXTRACT)
+    visits = [dict(url=f"/terminal?a=event-study&a.type={t}&a.period={PERIOD_ID.get(p, p)}&split=0&tutor=0", wait=READY, extract=EXTRACT)
               for t in TYPES for p in PERIODS]
     out = browser.visit(visits)
     return {(t, p): r for (t, p), r in zip([(t, p) for t in TYPES for p in PERIODS], out)}
@@ -161,7 +163,7 @@ def test_split_view_and_phone_width(browser):
                content_fits: panes.every((p) => p.scrollWidth <= p.clientWidth + 1 || getComputedStyle(p).overflowX !== 'visible'),
                heads: [...document.querySelectorAll('.headline thead th')].map((t) => t.textContent.trim()) };
     })()"""
-    url = "/terminal?a=event-study&a.type=CPI&a.period=both&b=event-study&b.type=all&b.period=2020-01..2023-05&split=1&tutor=0"
+    url = "/terminal?a=event-study&a.type=CPI&a.period=both&b=event-study&b.type=all&b.period=earlier&split=1&tutor=0"
     desk, phone = browser.visit([dict(url=url, wait=both, extract=layout),
                                  dict(url=url, width=390, height=844, mobile=True, wait=both, extract=layout)])
     for r in (desk, phone):

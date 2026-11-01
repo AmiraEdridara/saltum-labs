@@ -26,7 +26,7 @@ def sample_premium(period, t):
     return f"+{s['median_premium_pp']:.3f}", s["n"]
 
 
-EARLY, LATE = "2020-01..2023-05", "2023-06..now"
+EARLY, LATE = "earlier", "later"
 DEMO_FIGURES = {sample_premium(p, t)[0] for p in (EARLY, LATE) for t in ("CPI", "NFP")} | {f"{SAMPLE['summaries'][LATE]['CPI']['median_baseline_pct']:.3f}%"}
 DEMO_COUNTS = {str(sample_premium(p, t)[1]) for p in (EARLY, LATE) for t in ("CPI", "NFP")}
 PRICES = {str(settings.TUTOR_DAILY_FREE), str(settings.TUTOR_MONTHLY_PLUS), str(settings.TUTOR_PLUS_GBP_MONTH)}
@@ -42,7 +42,10 @@ def real_figures():
 
 
 def real_in(text):
-    return sorted(f for f in real_figures() if re.search(rf"(?<![\d.]){re.escape(f)}(?![\d])", text))
+    """Whole dates are compared whole, so that an invented day in a real month does not count as the real month."""
+    iso = r"\b\d{4}-\d{2}-\d{2}\b"
+    real, rest = real_figures(), re.sub(iso, " ", text)
+    return sorted((set(re.findall(iso, text)) & real) | {f for f in real if re.search(rf"(?<![\d.]){re.escape(f)}(?![\d])", rest)})
 
 
 # ---------------------------------------------------------------- routes
@@ -74,6 +77,56 @@ def test_security_policy_is_unchanged(client):
 
 
 # ---------------------------------------------------------------- no real numbers
+# ---------------------------------------------------------------- every public file, not only the rendered homepage
+PUBLIC_FILES = [*STATIC.glob("*.html"), *(STATIC / "js").rglob("*.js"), *(STATIC / "css").glob("*.css")]
+SAMPLE_FILE = (STATIC / "preview" / "sample.json").read_text(encoding="utf-8")
+LOGIN_ONLY = r"frozen|findings_v1|findings v1|\bv1\b|Stage \d"
+PLOT_CONSTANTS = {"0.02", "0.75", "0.85"}                               # layout values in vol_surface.js; they are not results
+
+
+def sample_values(node, key=""):
+    if isinstance(node, dict):
+        for k, v in node.items():
+            yield k, k                                                  # keys are text too: "summaries" was keyed by period
+            yield from sample_values(v, k)
+    elif isinstance(node, list):
+        for v in node:
+            yield from sample_values(v, key)
+    else:
+        yield key, node
+
+
+def test_the_public_file_guards_can_fail():
+    assert real_in('const PERIODS = ["both", "2020-01..2023-05", "2023-06..now"];')
+    assert real_in('{"period":"2023-06..now"}') and not real_in('{"date":"2023-05-18"}')  # an invented day in a real month
+    assert real_in(f'"{config.V1_END}"')
+    assert re.search(LOGIN_ONLY, "· v1 frozen to") and re.search(LOGIN_ONLY, "(Stage 5b)")
+
+
+def test_no_public_file_holds_a_real_figure_or_date():
+    for f in PUBLIC_FILES:
+        assert set(real_in(f.read_text(encoding="utf-8"))) <= PLOT_CONSTANTS, f
+
+
+def test_no_text_in_the_sample_file_holds_a_real_figure_or_date():
+    # Its 4,700 raw numbers are invented, and some match a figure in the findings by chance (0.02), so those are not
+    # compared one by one; every string, every date and every median is.
+    assert real_in(" ".join(v for _, v in sample_values(SAMPLE) if isinstance(v, str))) == []
+
+
+def test_no_median_in_the_sample_file_is_a_real_figure():
+    real = set(re.findall(r"\d+\.\d{3}", FINDINGS))
+    medians = [(k, v) for k, v in sample_values(SAMPLE) if k.startswith("median_") and isinstance(v, float)]
+    assert medians and not [(k, v) for k, v in medians if f"{abs(v):.3f}" in real]
+
+
+def test_no_public_file_has_login_only_wording():
+    for name, text in [(f.name, f.read_text(encoding="utf-8")) for f in PUBLIC_FILES] + [("sample.json", SAMPLE_FILE)]:
+        assert not re.search(LOGIN_ONLY, text, re.I), (name, re.findall(rf".{{30}}(?:{LOGIN_ONLY}).{{30}}", text, re.I)[:5])
+        for wording in [*settings.PERIOD_IDS.values(), *settings.TERMINAL_WORDING.values()]:
+            assert wording not in text, (name, wording)
+
+
 def test_the_guard_sees_a_real_number():
     # The check below is only worth having if it can fail: each of these is a real v1 figure or date.
     for text in ("median premium +0.264 pp", "baseline 0.493%", f"data to {config.V1_END}", "187 events", "2023-06 to now"):
@@ -143,6 +196,9 @@ EXTRACT = r"""(() => {
   const steps = [...document.querySelectorAll('#demo-chat .step')];
   return { text: document.body.innerText, sections, cut: cut.slice(0, 10), scrollX: document.documentElement.scrollWidth > innerWidth,
            edu_visible: edu.top >= 0 && edu.bottom <= innerHeight,
+           pricing: { plans_left: document.querySelector('.plans').getBoundingClientRect().left, plan_left: document.querySelector('.plan').getBoundingClientRect().left,
+                      heading_left: document.querySelector('#pricing h2').getBoundingClientRect().left },
+           section_padding: parseFloat(getComputedStyle(document.getElementById('method')).paddingTop),
            cards: [...document.querySelectorAll('#findings .card')].map(txt), tag: vis(document.querySelector('#demo .sample-tag')),
            demo: { done: document.getElementById('demo-chat').dataset.done, steps: steps.length, entering: steps.filter((s) => s.classList.contains('enter')).length,
                    transition: steps[0] ? getComputedStyle(steps[0]).transitionDuration : null, text: txt(document.getElementById('demo-chat')),
@@ -225,6 +281,13 @@ def test_reduced_motion_shows_the_demo_at_once(pages):
 def test_phone_width(pages):
     v = pages["phone"]["value"]
     assert not v["scrollX"] and v["cut"] == [], v["cut"]
+
+
+def test_pricing_lines_up_with_the_headings_and_the_sections_are_tighter(pages):
+    for k, most in (("desktop", 75), ("phone", 43)):                  # a third less than the old 112 and 64
+        v = pages[k]["value"]
+        assert v["pricing"]["plan_left"] == v["pricing"]["heading_left"], (k, v["pricing"])
+        assert v["section_padding"] <= most, (k, v["section_padding"])
 
 
 def test_links_and_signed_in_state(pages):

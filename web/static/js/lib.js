@@ -22,6 +22,12 @@ export function cached(path) {
 // The preview's plain wording, where the terminal's own would make invented numbers look like real results.
 export const plain = (real, sample) => (PREVIEW ? sample : real);
 
+// The real terminal's own wording arrives with the logged-in account, so it is in no public file.
+let words = {};
+export const setWords = (w = {}) => { words = w; };
+export const word = (key, fill = {}) => (words[key] || "").replace(/\{(\w+)\}/g, (_, k) => fill[k]);
+export const periodName = (p) => (p === "both" ? "both periods" : plain(word(p), `${p} period`));
+
 export const num = (v, dp = 3, sign = false) => (v === null || v === undefined || Number.isNaN(v) ? "–"
   : (sign && v > 0 ? "+" : "") + Number(v).toFixed(dp));
 
@@ -33,7 +39,7 @@ export function loadPlotly() {
     if (window.Plotly) return resolve(window.Plotly);
     const s = document.createElement("script");
     s.src = "/static/vendor/plotly-strict.min.js";
-    // The script can load and still fail to start (in 2026-10-15's case, a security policy blocked its styles).
+    // The script can load and still fail to start (once, a security policy blocked its styles).
     s.onload = () => (window.Plotly ? resolve(window.Plotly)
       : (plotly = undefined, reject(new Error("The charting library loaded but did not start."))));
     s.onerror = () => { plotly = undefined; reject(new Error("The charting library did not load.")); };

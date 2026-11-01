@@ -1,11 +1,9 @@
 // Page 1: the event study (docs/prd.md). Every number comes from the API, shown with n and its source.
-// Nothing is calculated here except formatting and sorting. "Held or not" is quoted from findings_v1.md.
-import { cached, chartFailed, h, loadPlotly, num, plain, renderTicket, source, table } from "../lib.js";
+// Nothing is calculated here except formatting and sorting. "Held or not" is quoted from the findings.
+import { cached, chartFailed, h, loadPlotly, num, periodName, plain, renderTicket, source, table, word } from "../lib.js";
 
 const TYPE_NAME = { CPI: "CPI", NFP: "Payrolls (NFP)", FOMC: "FOMC" };
-const PERIOD_NAME = { both: "both periods", "2020-01..2023-05": plain("2020-01 to 2023-05", "earlier period"),
-                      "2023-06..now": plain("2023-06 to now", "later period") };
-// Which finding states, in words, whether each type's premium held (findings_v1.md, Section 1).
+// Which finding states, in words, whether each type's premium held (the findings, Section 1).
 const FINDING_FOR = { CPI: "1.2", FOMC: "1.2", NFP: "1.3" };
 const DEFINITIONS = [
   ["Implied move", "ATM straddle divided by the forward, priced at the 16:15 close the day before"],
@@ -57,7 +55,7 @@ function nextPanel(next) {
       s.event_types.length > 1 ? h("h3", {}, TYPE_NAME[t]) : "",
       priced,
       table(["In the past", "n", "Median implied", "Median actual", "Actual smaller than priced"],
-            past.map((r) => [PERIOD_NAME[r.period], String(r.n), n(r.median_implied_move_pct), n(r.median_actual_move_pct),
+            past.map((r) => [periodName(r.period), String(r.n), n(r.median_implied_move_pct), n(r.median_actual_move_pct),
                              h("span", {}, n(r.share_actual_below_implied_pct), "% of days")]),
             { caption: `${TYPE_NAME[t]} days in the past (moves in %)` }),
       table(["After the event, in the past", "Event (n)", "Ordinary pairs (n)", "Event minus ordinary", "90% interval", "Survives both controls"],
@@ -84,11 +82,11 @@ function headline(ev) {
   return h("section", { class: "headline", "aria-labelledby": "headline-title" },
     h("h2", { id: "headline-title" }, "Headline numbers"),
     table(["", ...sums.map((s) => TYPE_NAME[s.event_type])], rows.map(([label, f]) => [label, ...sums.map(f)]),
-          { caption: `${PERIOD_NAME[ev.period]}; one column per event type, no pooled summary` }),
+          { caption: `${periodName(ev.period)}; one column per event type, no pooled summary` }),
     h("p", { class: ev.data.summaries_data === "live" ? "data-label live" : "data-label" },
       plain(ev.data.summaries_data === "live"
-        ? `Includes live data after ${ev.v1_end} (${ev.data.live_rows} events): not in findings_v1. Premium medians use final premiums only.`
-        : `Frozen results: findings v1, data to ${ev.v1_end}.`
+        ? word("live_results", { end: ev.v1_end, n: ev.data.live_rows })
+        : word("results_note", { end: ev.v1_end })
           + (ev.data.live_rows ? ` ${ev.data.live_rows} newer events are in the table below, marked live.` : ""),
         "Sample data: invented numbers, not results.")),
     source(...ev.source.filter((x) => x !== "date_list")), h("p", { class: "muted small" }, ev.caveat));
@@ -150,7 +148,7 @@ async function figure2(el, ev) {
 }
 
 const COLUMNS = [
-  ["date", "Date", (r) => (r.live ? [r.date, " ", h("span", { class: "live-badge", title: "Added by the daily update; not in findings_v1" }, "live")] : r.date)],
+  ["date", "Date", (r) => (r.live ? [r.date, " ", h("span", { class: "live-badge", title: word("live_badge") }, "live")] : r.date)],
   ["event_type", "Type", (r) => r.event_type],
   ["implied_move_pct", "Implied (%)", (r) => num(r.implied_move_pct)], ["actual_move_pct", "Actual (%)", (r) => num(r.actual_move_pct)],
   ["ratio", "Ratio", (r) => num(r.ratio)],
@@ -194,14 +192,14 @@ function caveats(ev, findings) {
   const ids = [...new Set(types.map((t) => FINDING_FOR[t]))];
   return h("section", { class: "caveats", "aria-labelledby": "caveats-title" },
     h("h2", { id: "caveats-title" }, "Caveats"),
-    h("p", {}, "Sample size in this selection (", PERIOD_NAME[ev.period], "): ",
+    h("p", {}, "Sample size in this selection (", periodName(ev.period), "): ",
       ev.data.summaries.map((s) => `${TYPE_NAME[s.event_type]} n ${s.n}`).join(", "), "."),
-    h("p", {}, plain("Did the premium hold in both periods? In the words of the frozen findings:",
+    h("p", {}, plain(word("findings_intro"),
                      "Did the premium hold in both periods? The real terminal quotes its findings here. Sample text:")),
     ids.map((id) => {
       const f = findingText(findings, id);
       return f ? h("blockquote", {}, h("p", {}, h("strong", {}, f.title)), f.bullets.map((b) => h("p", {}, b)),
-                   h("footer", {}, plain([h("code", {}, "findings_v1.md"), `, Section 1, Finding ${id}`], "Sample text, not a finding"))) : null;
+                   h("footer", {}, plain([h("code", {}, word("findings_file")), `, Section 1, Finding ${id}`], "Sample text, not a finding"))) : null;
     }),
     h("p", {}, ev.caveat));
 }

@@ -2,6 +2,8 @@
 import json
 import re
 
+from .. import settings
+
 ANALYSIS = """You are the tutor on Saltum Labs, an education site about how S&P 500 index options (SPX, SPXW) priced \
 CPI, FOMC and payrolls (NFP) days from 2020 to 2026: what move the options priced in, what actually happened, and \
 how the volatility surface changed. You teach. You do not give trading ideas.
@@ -51,7 +53,7 @@ explaining a term, reply with exactly NEED_DATA and nothing else."""
 
 PAGES = {"event-study": "Event study", "event-index": "Event index", "vol-surface": "Vol surface", "tutor": "Tutor",
          "help": "Help"}
-ALLOWED = {"type": {"all", "CPI", "NFP", "FOMC"}, "period": {"both", "2020-01..2023-05", "2023-06..now"},
+ALLOWED = {"type": {"all", "CPI", "NFP", "FOMC"}, "period": {"both", *settings.PERIOD_IDS},
            "exclude_flagged": {"true", "false"}, "include_ordinary": {"true", "false"}, "view": {"both", "d1", "d2"}}
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -64,7 +66,7 @@ def clean_context(ctx):
     params = ctx.get("params") if isinstance(ctx.get("params"), dict) else {}
     for k, v in params.items():
         if k in ALLOWED and v in ALLOWED[k]:
-            out[k] = v
+            out[k] = settings.PERIOD_IDS.get(v, v) if k == "period" else v      # the tutor's tools take the API's values
         elif k in ("d1", "d2") and isinstance(v, str) and DATE.match(v):
             out[{"d1": "date_1", "d2": "date_2"}[k]] = v
     return out

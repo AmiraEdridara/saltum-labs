@@ -1,7 +1,7 @@
-// Page 3: the Event index (docs/prd.md). One table of every event, and the Stage 5b summary of which skew
+// Page 3: the Event index (docs/prd.md). One table of every event, and the summary of which skew
 // effects held up against ordinary days. Every number comes from GET /events/index; per-day flags come from
 // GET /dates. The browser only formats and sorts.
-import { cached, h, num, plain, renderTicket, source } from "../lib.js";
+import { cached, h, num, plain, renderTicket, source, word } from "../lib.js";
 
 const TYPE_NAME = { CPI: "CPI", NFP: "Payrolls (NFP)", FOMC: "FOMC", "CPI+FOMC": "CPI+FOMC", ordinary: "ordinary" };
 const NO_MOVE = "no same-day SPXW expiry, so no implied move";
@@ -25,11 +25,11 @@ function failed(what, err) {
     + "If the code was updated recently, restart both servers.");
 }
 
-// ------------------------------------------------------------ summary (Stage 5b)
+// ------------------------------------------------------------ summary
 function summary(ix) {
   const d = ix.data;
   const box = h("section", { class: "ix-summary", "aria-labelledby": "ix-summary-title" },
-    h("h2", { id: "ix-summary-title" }, plain("Summary: event days against ordinary days (Stage 5b)", "Summary: event days against ordinary days")));
+    h("h2", { id: "ix-summary-title" }, plain(word("summary_title"), "Summary: event days against ordinary days")));
   if (!d.summary.length) {
     box.append(h("p", { class: "note summary-note" }, d.summary_note));
     return box;
@@ -62,7 +62,7 @@ function flagText(r, byDate) {
 }
 
 const COLUMNS = [
-  { key: "event_date", label: "Date", cell: (r) => (r.live ? [r.event_date, " ", h("span", { class: "live-badge", title: "Added by the daily update; not in findings_v1 or the summary" }, "live")] : r.event_date) },
+  { key: "event_date", label: "Date", cell: (r) => (r.live ? [r.event_date, " ", h("span", { class: "live-badge", title: word("live_badge_index") }, "live")] : r.event_date) },
   { key: "event_type", label: "Type", cell: (r) => TYPE_NAME[r.event_type] || r.event_type },
   { key: "days_drawn", label: "Days drawn", r: true, cell: (r) => `${r.days_drawn} of 2` },
   { key: "flag", label: "Flags", cell: (r) => r.flag },
@@ -128,7 +128,7 @@ export async function render(container, paneId, params, ctx) {
   } catch (err) {
     if (!current()) return;
     body.replaceChildren(
-      h("section", { class: "ix-summary" }, h("h2", {}, "Summary: event days against ordinary days (Stage 5b)"), failed("summary", err)),
+      h("section", { class: "ix-summary" }, h("h2", {}, word("summary_title")), failed("summary", err)),
       h("section", {}, h("h2", {}, "Event table"), failed("event table", err)));
     return;
   }

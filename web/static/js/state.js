@@ -3,7 +3,7 @@
 // Vol surface also keeps view (both, d1, d2), same (vol scale), link (rotation) and pts (computed options).
 
 const TYPES = ["all", "CPI", "NFP", "FOMC"];
-const PERIODS = ["both", "2020-01..2023-05", "2023-06..now"];
+const PERIODS = ["both", "earlier", "later"];
 const BOOL = ["false", "true"];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 

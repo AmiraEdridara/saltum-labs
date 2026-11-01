@@ -4,14 +4,16 @@ import { render as renderEventStudy } from "./pages/event_study.js";
 import { render as renderVolSurface } from "./pages/vol_surface.js";
 import { render as renderEventIndex } from "./pages/event_index.js";
 import { PREVIEW } from "./api.js";
+import { periodName } from "./lib.js";
 import { PAGES, page } from "./state.js";
 
+const capital = (s) => s[0].toUpperCase() + s.slice(1);
 const LABELS = { type: "Event type", period: "Period", exclude_flagged: "Exclude flagged days",
                  include_ordinary: "Show ordinary pairs", d1: "Date 1", d2: "Date 2",
-                 live: "Include live data (after {v1}) in the medians" };
+                 live: "Include live data (after {end}) in the medians" };
 const OPTION_TEXT = { all: "All (side by side)", NFP: "Payrolls (NFP)", both: "Both periods",
-                      "2020-01..2023-05": PREVIEW ? "Earlier period" : "2020-01 to 2023-05",
-                      "2023-06..now": PREVIEW ? "Later period" : "2023-06 to now",
+                      get earlier() { return capital(periodName("earlier")); },
+                      get later() { return capital(periodName("later")); },
                       true: "Yes", false: "No" };
 
 function el(tag, attrs = {}, ...children) {
@@ -37,7 +39,7 @@ function control(name, allowed, value, onChange, ctx) {
     if (v === value) o.selected = true;
     select.append(o);
   }
-  return el("label", {}, LABELS[name].replace("{v1}", ctx.dates.v1End || "…"), select);
+  return el("label", {}, LABELS[name].replace("{end}", ctx.dates.v1End || "…"), select);
 }
 
 function dayNote(date, ctx) {
@@ -88,7 +90,7 @@ export function renderPage(container, paneId, paneState, ctx) {
 
   const text = {
     "event-study": "Implied vs actual moves for CPI, FOMC and payrolls days, the event premium, and the event table.",
-    "event-index": "Every event in one table, with the Stage 5b summary of which skew effects held up against ordinary days.",
+    "event-index": "Every event in one table, with the summary of which skew effects held up against ordinary days.",
     "vol-surface": "Two days side by side: surface, smiles and term structure, with the skew numbers. Use [ and ] to move between dates.",
   }[p.id];
   container.append(el("div", { class: "placeholder" }, el("p", {}, text),

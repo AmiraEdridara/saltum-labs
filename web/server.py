@@ -145,7 +145,7 @@ async def reset(request: Request):
 def me(request: Request):
     user = require(request)
     return dict(public(user), layout=request.app.state.store.layout(user["id"]), provider=request.app.state.provider.name,
-                footer=settings.TERMINAL_FOOTER,
+                footer=settings.TERMINAL_FOOTER, wording=settings.TERMINAL_WORDING,
                 limits=dict(student_daily=settings.TUTOR_DAILY_FREE, tutor_plus_monthly=settings.TUTOR_MONTHLY_PLUS,
                             enforced=False))
 
@@ -183,10 +183,11 @@ async def proxy(path: str, request: Request):
     if not any(p.fullmatch(path) for p in API_PATHS):
         return JSONResponse({"error": "not found"}, status_code=404)
     token = request.app.state.provider.api_token_for(user)
+    params = [(k, settings.PERIOD_IDS.get(v, v) if k == "period" else v) for k, v in request.query_params.multi_items()]
     async with httpx.AsyncClient(base_url=settings.API_BASE, transport=request.app.state.api_transport,
                                  timeout=30) as client:
         try:
-            r = await client.get("/" + path, params=request.query_params,
+            r = await client.get("/" + path, params=params,
                                  headers={"Authorization": f"Bearer {token or ''}"})
         except httpx.HTTPError:
             return JSONResponse({"error": f"The API is not reachable at {settings.API_BASE}. Start it first."},
@@ -195,7 +196,10 @@ async def proxy(path: str, request: Request):
         return JSONResponse({"error": "The API refused the server's token. Check MACRO_WIRE_DEV_TOKEN in .env."},
                             status_code=502)
     passed_on = {codecheck.HEADER: r.headers[codecheck.HEADER]} if codecheck.HEADER in r.headers else None
-    return Response(r.content, status_code=r.status_code, media_type="application/json", headers=passed_on)
+    content = r.content
+    for neutral, real in settings.PERIOD_IDS.items():    # the browser's code knows periods only by their ids
+        content = content.replace(f'"{real}"'.encode(), f'"{neutral}"'.encode())
+    return Response(content, status_code=r.status_code, media_type="application/json", headers=passed_on)
 
 
 # ---------------------------------------------------------------- AI tutor (all Claude API calls are made here)

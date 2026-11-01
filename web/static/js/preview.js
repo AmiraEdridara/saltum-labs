@@ -5,15 +5,15 @@ let file;
 const sample = () => (file ??= fetch("/static/preview/sample.json").then((r) => r.json()));
 const typed = (rows, t) => (t === "all" ? rows : rows.filter((r) => r.event_type.split("+").includes(t)));
 const inPeriod = (rows, p) => (p === "both" ? rows : rows.filter((r) => r.period === p));
-const EARLY_END = "2023-05-31";
-const periodOf = (iso) => (iso <= EARLY_END ? "2020-01..2023-05" : "2023-06..now");
+const earlierEnd = (s) => s.index.data.events.filter((r) => r.period === "earlier").map((r) => r.event_date).sort().at(-1);
+const periodOf = (s, iso) => (iso <= earlierEnd(s) ? "earlier" : "later");
 
 function events(s, q) {
   const type = q.get("type") || "all", period = q.get("period") || "both";
-  const rows = inPeriod(typed(s.events.data.events, type).map((r) => ({ ...r, period: periodOf(r.date) })), period);
+  const rows = inPeriod(typed(s.events.data.events, type).map((r) => ({ ...r, period: periodOf(s, r.date) })), period);
   const summaries = Object.values(s.summaries[period]).filter((x) => type === "all" || x.event_type === type);
   return { ...s.events, n: rows.length, period, data: { ...s.events.data, events: rows, summaries,
-    summaries_data: q.get("data") === "live" ? "live" : "v1", live_rows: rows.filter((r) => r.live).length } };
+    summaries_data: q.get("data") === "live" ? "live" : "sample", live_rows: rows.filter((r) => r.live).length } };
 }
 
 function next(s, q) {
@@ -50,7 +50,7 @@ function surface(s, date) {
   Object.assign(d.day, { live: row.live, day_type: row.day_type, events: row.events, events_next_day: row.events_next_day, flagged: row.flagged });
   if (row.flagged) d.day.fit_max_volpts = 0.62;
   d.metrics = { ...d.metrics, ...level, short_expiry: d.expiries[0].expiration, short_dte: d.expiries[0].dte };
-  return { ...out, period: periodOf(date), params: { date } };
+  return { ...out, period: periodOf(s, date), params: { date } };
 }
 
 export async function sampleGet(path) {

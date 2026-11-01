@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from web import settings
-from web.tutor import numbers, service
+from web.tutor import numbers, prompt, service
 from webutil import sign_up
 
 FAKE_KEY = "sk-ant-test-not-a-real-key-0123456789"
@@ -277,6 +277,11 @@ def test_plan_setting_can_limit_saving_to_tutor_plus(client, tutor_app, monkeypa
     assert j["status"] == "answered" and j["session_id"] is None and j["saved"] is False
     assert client.get("/tutor/status").json()["saves_sessions"] is False
     assert client.get("/tutor/sessions").json()["sessions"] == []
+
+
+def test_page_context_turns_a_period_id_into_the_api_value():
+    assert prompt.clean_context({"page": "event-study", "params": {"period": "later"}})["period"] == "2023-06..now"
+    assert "period" not in prompt.clean_context({"page": "event-study", "params": {"period": "2023-06..now"}})
 
 
 def test_page_context_is_cleaned_and_marked_as_data(client, tutor_app):
