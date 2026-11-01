@@ -9,12 +9,14 @@ import socket
 import subprocess
 import sys
 import time
+import warnings
 
 import httpx
 import pytest
 
 import config
 
+DROPPED, DROP_LOG = 75, config.PROJECT_DIR / "tests" / "web" / "browser_drops.log"     # see cdp_visit.mjs
 EDGE = next((p for p in (r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
                          r"C:\Program Files\Microsoft\Edge\Application\msedge.exe") if os.path.exists(p)), None)
 NODE = shutil.which("node")
@@ -53,7 +55,10 @@ class Browser:
                    # would be refused by the API, so the page tests can never spend money. They never ask a question.
                    ANTHROPIC_API_KEY="not-a-real-key-page-tests")
         run = [sys.executable, "-m", "uvicorn", "--host", "127.0.0.1", "--log-level", "warning"]
-        self.procs = [subprocess.Popen(run + ["api.main:app", "--port", str(API_PORT)], cwd=config.PROJECT_DIR, env=env),
+        # The test API reads this test run's private copy of the database (tests/conftest.py).
+        api = ("import sys, pathlib, config, uvicorn; config.DUCKDB_PATH = pathlib.Path(sys.argv[1]); "
+               f"uvicorn.run('api.main:app', host='127.0.0.1', port={API_PORT}, log_level='warning')")
+        self.procs = [subprocess.Popen([sys.executable, "-c", api, str(config.DUCKDB_PATH)], cwd=config.PROJECT_DIR, env=env),
                       subprocess.Popen(run + ["web.server:app", "--port", str(WEB_PORT)], cwd=config.PROJECT_DIR, env=env)]
         _wait_port(API_PORT)
         _wait_port(WEB_PORT)
@@ -64,7 +69,19 @@ class Browser:
         self.users_db = tmp / "users.sqlite"
         self.runs = 0
 
-    def visit(self, visits, edge_args=(), headed=False, block=()):
+    def visit(self, visits, **kw):
+        """A lost connection to Edge says nothing about the page, so it gets one more try, and is logged and warned about."""
+        r = self._visit(visits, **kw)
+        if isinstance(r, str):
+            with open(DROP_LOG, "a", encoding="utf-8") as f:
+                f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {r}\n")
+            warnings.warn(f"Edge connection lost, retried once: {r}")
+            r = self._visit(visits, **kw)
+            if isinstance(r, str):
+                raise RuntimeError(f"Edge connection lost twice: {r}")
+        return r
+
+    def _visit(self, visits, edge_args=(), headed=False, block=()):
         self.runs += 1
         # A fresh DevTools port per run: the previous Edge may still be releasing its port.
         job = dict(edge=EDGE, port=CDP_PORT + self.runs, profile=str(self.tmp / f"edge-{self.runs}"), origin=f"http://127.0.0.1:{WEB_PORT}",
@@ -73,6 +90,8 @@ class Browser:
         jf.write_text(json.dumps(job), encoding="utf-8")
         try:
             r = subprocess.run([NODE, str(SCRIPT), str(jf), str(out)], capture_output=True, text=True, timeout=600)
+            if r.returncode == DROPPED:
+                return r.stderr.strip()[-1000:]
             if r.returncode:
                 raise RuntimeError(f"cdp_visit.mjs failed (exit {r.returncode}): {r.stderr[-2000:]}")
         finally:

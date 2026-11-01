@@ -1,6 +1,7 @@
 """The /api proxy: refuses logged-out requests, adds the token server-side, and never shows it."""
 import pytest
 
+import config
 from web import settings
 from webutil import TOKEN, sign_up
 
@@ -61,6 +62,10 @@ def test_api_down_gives_a_clear_502(client, web):
     web.state.api_transport = Down()
     r = client.get("/api/dates")
     assert r.status_code == 502 and "not reachable" in r.json()["error"]
+
+
+def test_the_tests_read_a_private_copy_of_the_database():
+    assert config.DUCKDB_PATH != config.PROJECT_DIR / "data" / "macro_wire.duckdb" and config.DUCKDB_PATH.exists()
 
 
 def test_the_browser_uses_period_ids_and_only_the_server_knows_the_dates(client):

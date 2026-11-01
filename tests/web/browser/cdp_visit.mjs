@@ -4,14 +4,20 @@
 // wait_after: what to wait for after keys and actions (default: wait again). logged_out: visit without the session cookie. media: CSS media features to emulate, e.g. [{ name: "prefers-reduced-motion", value: "reduce" }].
 // For each visit: open the URL, wait until `wait` (a JS expression) is truthy, press `keys`, then return
 // the value of `extract` plus any console errors, exceptions and blocked resources.
+// If the DevTools connection is lost, it exits with code 75 and says what it was doing (browser_harness.py retries once).
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 
 const job = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Without the sign-in and sync options, a new profile signs in to the Windows user's Microsoft account by itself: the test
+// profiles then hold account data, and the DevTools connection sometimes drops while Edge is otherwise fine.
 const edge = spawn(job.edge, [...(job.headed ? [] : ["--headless=new"]), `--remote-debugging-port=${job.port}`, `--user-data-dir=${job.profile}`,
-                              "--no-first-run", "--no-default-browser-check", ...(job.edge_args || []), "about:blank"], { stdio: "ignore" });
+                              "--no-first-run", "--no-default-browser-check", "--disable-sync", "--disable-extensions",
+                              "--disable-features=msImplicitSignin", "--disable-background-networking",
+                              ...(job.edge_args || []), "about:blank"], { stdio: "ignore" });
 const results = [];
+let current = "starting", closing = false, failure = null;
 try {
   let target;
   for (let i = 0; i < 100 && !target; i++) {
@@ -37,11 +43,15 @@ try {
     if (r.result.exceptionDetails) throw new Error("evaluate: " + (r.result.exceptionDetails.exception?.description || r.result.exceptionDetails.text));
     return r.result.result.value;
   };
+  const dropped = new Promise((_, reject) => ws.addEventListener("close", (e) => {
+    if (!closing) reject(new Error(`DevTools connection lost (close code ${e.code}, ${waiting.size} replies pending) during ${current}`));
+  }));
   await send("Runtime.enable"); await send("Log.enable"); await send("Network.enable");
   if (job.block?.length) await send("Network.setBlockedURLs", { urls: job.block });     // e.g. to make Plotly fail
   await send("Network.setCookie", { name: job.cookie.name, value: job.cookie.value, url: job.origin, httpOnly: true });
-  for (const v of job.visits) {
+  const visits = async () => { for (const v of job.visits) {
     errors = [];
+    current = `visit ${results.length + 1} of ${job.visits.length}, ${v.url}`;
     await send("Emulation.setDeviceMetricsOverride", { width: v.width || 1440, height: v.height || 900, deviceScaleFactor: 1, mobile: !!v.mobile });
     await send("Emulation.setEmulatedMedia", { features: v.media || [] });
     if (v.logged_out) await send("Network.deleteCookies", { name: job.cookie.name, url: job.origin });
@@ -78,9 +88,21 @@ try {
     let value = null, error = null;
     try { value = await evaluate(v.extract); } catch (e) { error = String(e.message || e); }
     results.push({ url: v.url, ready: ok, value, error, errors: [...errors] });
-  }
+  } };
+  await Promise.race([visits(), dropped]);
+  closing = true;
   ws.close();
+} catch (e) {
+  failure = e;
 } finally {
   edge.kill();             // helper processes are stopped by the Python harness (by profile folder)
   fs.writeFileSync(process.argv[3], JSON.stringify(results, null, 1));
+}
+if (failure) {
+  const lost = failure.message.startsWith("DevTools connection lost");
+  if (lost) {
+    const list = await fetch(`http://127.0.0.1:${job.port}/json/list`).then((r) => r.json()).catch(() => null);
+    console.error(`${failure.message}; browser ${list ? `still answering, targets: ${JSON.stringify(list.map((t) => [t.type, t.url]))}` : "gone"}`);
+  } else console.error(failure.stack);
+  process.exit(lost ? 75 : 1);                // now: the abandoned visit's timers would keep Node alive for minutes
 }

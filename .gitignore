@@ -20,6 +20,7 @@ data/*
 data/live/*
 !data/live/v1_checksums.csv
 web/var/
+tests/web/browser_drops.log
 .venv/
 __pycache__/
 .pytest_cache/
