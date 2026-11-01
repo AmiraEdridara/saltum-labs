@@ -1,67 +1,67 @@
-"""Page 6, the homepage: GET / for everyone, GET /home/data public with fixed v1 summaries only, every number on the
-page traced to the API or data/findings_v1.md, the ten sections, phone width, reduced motion, and a tutor demo that
-makes no requests. The terminal preview in section 3 is tested in test_preview.py."""
+"""Page 6, the homepage: a public page with no real numbers. GET / for everyone, no data route and no data request, the
+nine sections, a tutor demo on sample figures, findings in words, no internal wording, phone width, reduced motion. The
+terminal preview in section 2 is tested in test_preview.py."""
 import json
 import re
 
 import pytest
 
 import config
-from web import home, settings
+from web import settings
 from webutil import sign_up
 
 FINDINGS = (config.PROJECT_DIR / "data" / "findings_v1.md").read_text(encoding="utf-8")
 STATIC = config.PROJECT_DIR / "web" / "static"
-MINUS = "−"
-SECTIONS = ["hero", "stats", "tour", "demo", "method", "honest", "findings", "next", "pricing", "footer"]
+SAMPLE = json.loads((STATIC / "preview" / "sample.json").read_text(encoding="utf-8"))
+HTML = (STATIC / "home.html").read_text(encoding="utf-8")
+JS = (STATIC / "js" / "home.js").read_text(encoding="utf-8")
+DEMO = (STATIC / "js" / "home_demo.js").read_text(encoding="utf-8")
+SECTIONS = ["hero", "tour", "demo", "method", "honest", "findings", "next", "pricing", "footer"]
+INTERNAL = r"frozen|findings_v1|findings v1|\bv1\b|\blive\b|Stage \d|local version|local edition|on this computer|ThetaData|FRED|provisional"
+NUMBER = r"(?<![\w.:])[+−-]?\d[\d,]*(?:[.:]\d+)?%?"
 
 
-def signed(x, d):
-    return (MINUS if x < 0 else "+") + f"{abs(x):.{d}f}"
+def sample_premium(period, t):
+    s = SAMPLE["summaries"][period][t]
+    return f"+{s['median_premium_pp']:.3f}", s["n"]
 
 
-FMT = {"text": str, "int": lambda x: f"{int(x):,}", "pp3": lambda x: signed(x, 3), "vp3": lambda x: signed(x, 3),
-       "pct3": lambda x: f"{x:.3f}", "range2": lambda x: f"{x:.2f}"}
+EARLY, LATE = "2020-01..2023-05", "2023-06..now"
+DEMO_FIGURES = {sample_premium(p, t)[0] for p in (EARLY, LATE) for t in ("CPI", "NFP")} | {f"{SAMPLE['summaries'][LATE]['CPI']['median_baseline_pct']:.3f}%"}
+DEMO_COUNTS = {str(sample_premium(p, t)[1]) for p in (EARLY, LATE) for t in ("CPI", "NFP")}
+PRICES = {str(settings.TUTOR_DAILY_FREE), str(settings.TUTOR_MONTHLY_PLUS), str(settings.TUTOR_PLUS_GBP_MONTH)}
+ALLOWED = DEMO_FIGURES | DEMO_COUNTS | PRICES | {"500"}                # 500: the index's name, S&P 500
 
 
-def pick(data, path):
-    for k in path.split("."):
-        data = data[int(k)] if isinstance(data, list) else data[k]
-    return data
+def real_figures():
+    """The figures and dates of the frozen findings, and the counts the old homepage showed."""
+    decimals = re.findall(r"\d+\.\d{2,}", FINDINGS)
+    dates = re.findall(r"\d{4}-\d{2}-\d{2}", FINDINGS)
+    years = re.findall(r"\b20(?:20|2[1-6])[–-]\d{2}\b", FINDINGS)
+    return set(decimals) | set(dates) | set(years) | {str(config.V1_END), "1,650", "1,630", "187", "411", "2023-05", "2023-06"}
 
 
-@pytest.fixture(autouse=True)
-def fresh_cache():
-    home.reset()
-    yield
-    home.reset()
+def real_in(text):
+    return sorted(f for f in real_figures() if re.search(rf"(?<![\d.]){re.escape(f)}(?![\d])", text))
 
 
 # ---------------------------------------------------------------- routes
 def test_root_serves_the_homepage_logged_out_and_logged_in(client):
     r = client.get("/")
     assert r.status_code == 200 and 'id="hero"' in r.text and r.headers["cache-control"] == "no-store"
+    assert "<body>" in r.text and "signed-in\">" not in r.text.split("<body>")[1][:5]
     sign_up(client)
     r = client.get("/")
-    assert r.status_code == 200 and 'id="hero"' in r.text            # logged-in users can still reach it
+    assert r.status_code == 200 and '<body class="signed-in">' in r.text   # logged-in users can still reach it
 
 
-def test_home_data_is_public_fixed_and_has_no_quotes(client):
-    r = client.get("/home/data")
-    assert r.status_code == 200
-    j = r.json()
-    assert set(j) == {"v1_end", "stats", "event_study", "surface", "index_rows", "tutor_card", "method", "findings",
-                      "pricing", "sources", "signed_in"}
-    assert j["signed_in"] is False and j["v1_end"] == str(config.V1_END)
-    text = json.dumps(j)
-    for quote_field in ("bid", "ask", "straddle", "strike", "forward", "quotes_kept"):
-        assert f'"{quote_field}"' not in text
-    assert client.get("/home/data?type=CPI").status_code == 400           # no parameters
+def test_there_is_no_homepage_data_route(client):
+    assert client.get("/home/data").status_code == 404
     sign_up(client)
-    assert client.get("/home/data").json()["signed_in"] is True
+    assert client.get("/home/data").status_code == 404
 
 
-def test_everything_else_still_needs_a_login(client):
+def test_every_data_route_needs_a_login(client):
     for path in ("/api/events", "/api/dates", "/api/findings", "/api/events/index", "/api/surface/2026-09-11",
                  "/account/me", "/tutor/status"):
         assert client.get(path).status_code == 401, path
@@ -73,138 +73,84 @@ def test_security_policy_is_unchanged(client):
     assert "script-src" not in client.get("/").headers["content-security-policy"]       # 'self' only, via default-src
 
 
-# ---------------------------------------------------------------- every field equals the logged-in API
-@pytest.fixture()
-def data_and_api(client):
-    data = client.get("/home/data").json()
+# ---------------------------------------------------------------- no real numbers
+def test_the_guard_sees_a_real_number():
+    # The check below is only worth having if it can fail: each of these is a real v1 figure or date.
+    for text in ("median premium +0.264 pp", "baseline 0.493%", f"data to {config.V1_END}", "187 events", "2023-06 to now"):
+        assert real_in(text), text
+    assert real_figures() and not real_in("S&P 500, 7 tutor questions, £12 a month, 250 questions")
+
+
+def test_no_real_number_is_in_the_homepage_files(client):
+    for name, text in (("/", client.get("/").text), ("home.js", JS), ("home_demo.js", DEMO)):
+        assert real_in(text) == [], name
+
+
+def test_the_sample_figures_are_not_real_ones():
+    assert real_in(" ".join(sorted(DEMO_FIGURES))) == []
+
+
+def test_no_median_from_the_api_is_on_the_homepage(client):
+    page = client.get("/").text + DEMO
     sign_up(client)
-    api = lambda path: client.get("/api" + path).json()                  # noqa: E731
-    return data, api
+    for period in ("both", EARLY, LATE):
+        for s in client.get(f"/api/events?type=all&period={period}").json()["data"]["summaries"]:
+            for k in ("median_premium_pp", "median_baseline_pct", "median_implied_move_pct", "median_actual_move_pct"):
+                if s[k] is not None:
+                    assert f"{s[k]:.3f}" not in page, (period, s["event_type"], k)
 
 
-def test_home_data_matches_the_api(data_and_api):
-    data, api = data_and_api
-    v1 = data["v1_end"]
-    both = {s["event_type"]: s for s in api("/events?type=all&period=both")["data"]["summaries"]}
-    for r in data["event_study"]:
-        s = both[r["type"]]
-        assert (r["n"], r["median_implied_pct"], r["median_actual_pct"]) == (s["n"], s["median_implied_move_pct"], s["median_actual_move_pct"])
-    for period, key in (("2020-01..2023-05", "early"), ("2023-06..now", "late"), ("both", "all")):
-        summ = {s["event_type"]: s for s in api(f"/events?type=all&period={period}")["data"]["summaries"]}
-        for t, p in data["findings"]["premium"].items():
-            assert (p[key], p[f"{key}_n"]) == (summ[t]["median_premium_pp"], summ[t]["n"]), (t, period)
-    events = api("/events?type=all&period=both")["data"]["events"]
-    assert data["stats"]["events"] == sum(not e["live"] for e in events) == 187
-    # The per-type n's count a two-release day (CPI+FOMC) once for each type: they add to the event days plus those.
-    two = [e["date"] for e in events if not e["live"] and "+" in e["event_type"]]
-    assert data["stats"]["two_release_days"] == len(two) == 2 and sorted(two) == ["2020-06-10", "2024-06-12"]
-    assert sum(r["n"] for r in data["event_study"]) == data["stats"]["events"] + data["stats"]["two_release_days"] == 195
-    d = api("/dates")["data"]
-    days = [x for x in d["dates"] if x["date"] <= v1]
-    failed = [x for x in d["failed"] if x["date"] <= v1]
-    assert data["stats"]["trading_days"] == len(days) + len(failed)
-    assert (data["stats"]["first_year"], data["stats"]["last_year"]) == (days[0]["date"][:4], v1[:4])
-    assert data["method"] == dict(surfaces_drawn=len(days), surfaces_flagged=sum(x["flagged"] for x in days), surfaces_failed=len(failed))
-    index = api("/events/index")["data"]
-    ordinary = next(r for r in index["summary"] if r["group"] == "ordinary pairs")
-    assert data["stats"]["control_pairs"] == data["findings"]["ordinary_pairs"] == ordinary["n"] == 100
-    tested = [r for r in index["summary"] if r["survives_both_controls"] is not None]
-    assert data["findings"]["comparisons_tested"] == len(tested) == 9
-    survived = {(r["measure"], r["group"]): r for r in tested if r["survives_both_controls"]}
-    ex = {(r["measure"], r["group"]): r for r in api("/events/index?exclude_flagged=true")["data"]["summary"]}
-    assert {(s["measure"], s["type"]) for s in data["findings"]["survivors"]} == set(survived)
-    for s in data["findings"]["survivors"]:
-        a, b = survived[(s["measure"], s["type"])], ex[(s["measure"], s["type"])]
-        assert (s["diff"], s["ci"], s["n"]) == (a["event_minus_ordinary_volpts"], a["ci90_volpts"], a["n"])
-        assert (s["diff_ex"], s["ci_ex"], s["n_ex"]) == (b["event_minus_ordinary_volpts"], b["ci90_volpts"], b["n"])
-    rows = sorted((r for r in index["events"] if not r["live"] and r["implied_move_pct"] is not None),
-                  key=lambda r: r["event_date"], reverse=True)[:5]
-    assert data["index_rows"] == [{k: r[k] for k in ("event_date", "event_type", "implied_move_pct", "actual_move_pct", "d_atm30", "flagged")}
-                                  for r in rows]
-    sf = data["surface"]
-    for key, day in (("before", sf["day_before"]), ("after", sf["event_date"])):
-        term = api(f"/surface/{day}")["data"]["term"]
-        assert sf[key] == [dict(dte=t["dte"], atm_iv_pct=t["atm_iv_pct"]) for t in term]
-    card = api(f"/events/{data['tutor_card']['date']}")["data"]
-    assert all(data["tutor_card"][k] == card[k] for k in ("event_type", "implied_move_pct", "actual_move_pct", "baseline_pct",
-                                                          "baseline_n", "premium_pp"))
-    assert data["pricing"] == dict(student_daily=settings.TUTOR_DAILY_FREE, tutor_plus_monthly=settings.TUTOR_MONTHLY_PLUS,
-                                   tutor_plus_gbp_month=settings.TUTOR_PLUS_GBP_MONTH)
+def test_no_homepage_file_has_internal_wording(client):
+    for name, text in (("/", client.get("/").text), ("home_demo.js", DEMO)):
+        text = re.sub(r"<!--.*?-->|<[^>]+>", " ", text, flags=re.S)         # the words, not the markup (aria-live)
+        assert not re.search(INTERNAL, text, re.I), (name, re.findall(rf".{{20}}(?:{INTERNAL}).{{20}}", text, re.I))
 
 
-def test_findings_numbers_are_the_frozen_ones(client):
-    f = client.get("/home/data").json()["findings"]
-    table = FINDINGS.split("### Event premium")[1].split("**Controls")[0]
-    for t in ("CPI", "FOMC", "NFP"):
-        p = f["premium"][t]
-        row = next(line for line in table.splitlines() if line.startswith(f"| {t} |"))
-        assert f"{p['early_n']} / {p['late_n']} / {p['all_n']}" in row
-        assert f"{signed(p['early'], 3)} / {signed(p['late'], 3)} / {signed(p['all'], 3)}".replace(MINUS, "−") in row
-    stage5b = FINDINGS.split("**Event minus ordinary, median")[1].split("**Ordinary-pair medians")[0]
-    names = {"30-day ATM (fixed strike)": "30-day ATM (fixed strike)", "30-day RR25": "30-day RR25", "30-day put wing": "30-day put wing"}
-    for s in f["survivors"]:
-        row = next(line for line in stage5b.splitlines() if line.startswith(f"| {names[s['measure']]} | {s['type']} |"))
-        assert f"{signed(s['diff'], 3)} [{signed(s['ci'][0], 3)}, {signed(s['ci'][1], 3)}] ({s['n']})" in row
-        assert f"{signed(s['diff_ex'], 3)} [{signed(s['ci_ex'][0], 3)}, {signed(s['ci_ex'][1], 3)}] ({s['n_ex']})" in row
-        assert "**yes**" in row
-    survivors = {(s["type"], s["measure"]) for s in f["survivors"]}
-    assert survivors == {("CPI", "30-day ATM (fixed strike)"), ("CPI", "30-day RR25"), ("CPI", "30-day put wing"),
-                         ("NFP", "30-day ATM (fixed strike)"), ("FOMC", "30-day RR25")}        # Finding 5.1, as written
+def test_no_public_page_has_the_real_v1_date(client):
+    for path in ("/", "/login", "/preview"):
+        assert str(config.V1_END) not in client.get(path).text, path
 
 
-# ---------------------------------------------------------------- the scripted demo
-DEMO = (STATIC / "js" / "home_demo.js").read_text(encoding="utf-8")
+# ---------------------------------------------------------------- the page's own figures
+def test_the_prices_match_the_settings():
+    pricing = HTML.split('id="pricing"')[1]
+    assert f'<span class="num">{settings.TUTOR_DAILY_FREE}</span> tutor questions a day' in pricing
+    assert f'£<span class="num">{settings.TUTOR_PLUS_GBP_MONTH}</span> a month' in pricing
+    assert f'<span class="num">{settings.TUTOR_MONTHLY_PLUS}</span> tutor questions a month' in pricing
 
 
-def test_demo_numbers_match_the_api_and_findings(client):
-    p = client.get("/home/data").json()["findings"]["premium"]
-    want = {"+0.264": p["CPI"]["late"], "+0.352": p["CPI"]["early"], "+0.164": p["NFP"]["late"], "+0.018": p["NFP"]["early"]}
-    for text, value in want.items():
-        assert signed(value, 3) == text and text in FINDINGS and text in DEMO
-    assert f"n {p['CPI']['late_n']}" in DEMO and f"n {p['CPI']['early_n']}" in DEMO and f"n {p['NFP']['late_n']}" in DEMO
-    assert f"{p['CPI']['baseline_late_pct']:.3f}%" == "0.497%" and "0.497%" in DEMO
-    assert "0.493–0.506 pp in\n2023–26" in FINDINGS                    # the frozen range that 0.497 sits in
-    # Every number in the script is one of those (or a period, an n, or a finding number).
+def test_demo_numbers_come_from_the_sample_file():
+    for figure in DEMO_FIGURES:
+        assert figure in DEMO, figure
     script = DEMO.split("export const DEMOS")[1]
-    script = re.sub(r"\d{4}-\d{2}\.\.(?:\d{4}-\d{2}|now)", "PERIOD", script)       # the tool calls' period arguments
-    script = re.sub(r"20(?:20|23)–2[36]", "YEARS", script)                        # 2020–23, 2023–26
-    allowed = set(want) | {"0.497", "39", "26", "1.3"}
-    for tok in re.findall(r"(?<![\w.])[+−-]?\d+(?:\.\d+)?", script):
-        assert tok in allowed, tok
+    for tok in re.findall(NUMBER, script):
+        assert tok in ALLOWED, tok
 
 
-def test_demo_makes_no_requests_by_construction():
-    js = (STATIC / "js" / "home.js").read_text(encoding="utf-8")
-    assert not re.search(r"\bfetch\b|XMLHttpRequest|import\s*\(|WebSocket|sendBeacon", DEMO)
-    assert len(re.findall(r"\bfetch\(", js)) == 1 and 'fetch("/home/data"' in js       # one request, on load
+def test_the_page_makes_no_request_by_construction():
+    for text in (JS, DEMO):
+        assert not re.search(r"\bfetch\b|XMLHttpRequest|import\s*\(|WebSocket|sendBeacon", text)
 
 
 # ---------------------------------------------------------------- in headless Edge
 EXTRACT = r"""(() => {
   const txt = (e) => e.textContent.replace(/\s+/g, ' ').trim();
   const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
-  const nums = [...document.querySelectorAll('[data-src]')].map((e) => ({ src: e.dataset.src, fmt: e.dataset.fmt, text: e.textContent,
-                                                                        inDemo: !!e.closest('#demo') }));
-  // Visible text with the data-src numbers, axis ticks and the demo removed: what is left must be sourced in findings_v1.
-  const clone = document.body.cloneNode(true);
-  clone.querySelectorAll('[data-src], [data-tick], #demo-chat, script, .hidden').forEach((e) => e.remove());
-  const words = [];
-  for (const w = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT); w.nextNode();) words.push(w.currentNode.nodeValue);
   const sections = [...document.querySelectorAll('main > section[id], body > footer[id]')].map((e) => ({ id: e.id, text: txt(e).length, visible: vis(e) }));
-  const cut = [...document.querySelectorAll('body *')].filter((e) => vis(e) && !e.closest('.figures, .mini-table, svg'))
+  const cut = [...document.querySelectorAll('body *')].filter((e) => vis(e) && !e.closest('svg'))
     .filter((e) => e.getBoundingClientRect().right > innerWidth + 1).map((e) => e.tagName + '.' + e.className);
   const edu = [...document.querySelectorAll('.masthead-line span')][0].getBoundingClientRect();
   const steps = [...document.querySelectorAll('#demo-chat .step')];
-  return { nums, rest: words.join(' ').replace(/\s+/g, ' '), sections, cut: cut.slice(0, 10), scrollX: document.documentElement.scrollWidth > innerWidth,
-           edu_visible: edu.top >= 0 && edu.bottom <= innerHeight, data: window.__home,
+  return { text: document.body.innerText, sections, cut: cut.slice(0, 10), scrollX: document.documentElement.scrollWidth > innerWidth,
+           edu_visible: edu.top >= 0 && edu.bottom <= innerHeight,
+           cards: [...document.querySelectorAll('#findings .card')].map(txt), tag: vis(document.querySelector('#demo .sample-tag')),
            demo: { done: document.getElementById('demo-chat').dataset.done, steps: steps.length, entering: steps.filter((s) => s.classList.contains('enter')).length,
                    transition: steps[0] ? getComputedStyle(steps[0]).transitionDuration : null, text: txt(document.getElementById('demo-chat')),
                    pressed: document.querySelector('.demo-pick[aria-pressed="true"]')?.dataset.demo },
-           requests_after: window.__mark == null ? null : performance.getEntriesByType('resource').filter((e) => e.startTime > window.__mark).map((e) => e.name),
            requests_all: performance.getEntriesByType('resource').map((e) => e.name),
            signed_in_visible: [...document.querySelectorAll('[data-signed-in]')].some(vis),
            signed_out_visible: [...document.querySelectorAll('[data-signed-out]')].some(vis),
-           links: Object.fromEntries([...document.querySelectorAll('a.open, .actions a, .plan a')].filter(vis).map((a) => [txt(a), a.getAttribute('href')])) };
+           links: Object.fromEntries([...document.querySelectorAll('.actions a, .plan a')].filter(vis).map((a) => [txt(a), a.getAttribute('href')])) };
 })()"""
 READY = "document.body.dataset.ready === 'true'"
 REDUCED = [{"name": "prefers-reduced-motion", "value": "reduce"}]
@@ -213,11 +159,11 @@ REDUCED = [{"name": "prefers-reduced-motion", "value": "reduce"}]
 @pytest.fixture(scope="module")
 def pages(browser):
     visits = {
-        # Desktop, logged out: scroll to the demo, mark the time, replay and switch questions, then read every request since.
+        # Desktop, logged out: scroll to the demo, replay and switch questions, then read every request made.
         "desktop": dict(url="/", logged_out=True, wait=READY,
                         wait_after="document.getElementById('demo-chat').dataset.done === 'true'"
                                    " && document.querySelector('.demo-pick[aria-pressed=\"true\"]').dataset.demo === '1'",
-                        actions=["(() => { window.__mark = performance.now(); document.getElementById('demo').scrollIntoView(); })()",
+                        actions=["document.getElementById('demo').scrollIntoView()",
                                  "document.getElementById('demo-replay').click()",
                                  "document.querySelector('.demo-pick[data-demo=\"1\"]').click()"],
                         extract=EXTRACT, timeout_s=60),
@@ -233,7 +179,7 @@ def test_pages_render_without_errors(pages):
         assert r["ready"] and r["error"] is None and r["errors"] == [], (k, r["error"], r["errors"])
 
 
-def test_the_ten_sections_render_in_order(pages):
+def test_the_nine_sections_render_in_order(pages):
     for k in ("desktop", "phone"):
         secs = pages[k]["value"]["sections"]
         assert [s["id"] for s in secs] == SECTIONS
@@ -242,29 +188,33 @@ def test_the_ten_sections_render_in_order(pages):
         assert pages[k]["value"]["edu_visible"]                       # "Education only, not advice" without scrolling
 
 
-def test_every_number_matches_the_api_or_findings(pages):
+def test_no_real_number_is_on_the_rendered_page(pages):
     for k in ("desktop", "phone", "signed_in"):
-        v = pages[k]["value"]
-        assert len(v["nums"]) > 75
-        for n in v["nums"]:
-            assert n["text"] == FMT[n["fmt"]](pick(v["data"], n["src"])), (k, n)
-        sizes = [abs(s["diff"]) for s in v["data"]["findings"]["survivors"]]
-        assert v["data"]["findings"]["plain_range"] == [min(sizes), max(sizes)]
-        # Numbers written into the page text (times, windows, finding numbers) must appear in findings_v1.md.
-        for tok in set(re.findall(r"(?<![\w.:])[+−-]?\d[\d,]*(?:[.:]\d+)?%?", v["rest"])):
-            tok = tok.strip()
-            assert tok in FINDINGS or tok == "500", (k, tok)               # 500: the index's name, S&P 500
+        text = pages[k]["value"]["text"]
+        assert real_in(text) == [], k
+        assert not re.search(INTERNAL, text, re.I), k
+        for tok in re.findall(NUMBER, text):                          # every number on the page is a known, invented or public one
+            assert tok.replace("£", "") in ALLOWED, (k, tok)
 
 
-def test_the_demo_plays_without_any_request(pages):
+def test_the_findings_are_words_with_a_link_to_the_numbers(pages):
     v = pages["desktop"]["value"]
-    assert v["demo"]["done"] == "true" and v["demo"]["pressed"] == "1" and v["demo"]["steps"] == 5
-    # Replay and switching: no requests at all. The terminal preview's frame loads when it scrolls into view.
-    assert [u for u in v["requests_after"] if not u.endswith(("/preview", "/favicon.svg"))] == [], v["requests_after"]
+    assert len(v["cards"]) == 2 and "held in both periods" in v["cards"][0]
+    assert all(not re.search(r"\d", c) for c in v["cards"]), v["cards"]
+    assert v["links"]["See the numbers in the terminal"] == "/terminal"
+
+
+def test_the_page_calls_nothing_but_its_own_files_and_the_preview(pages):
+    v = pages["desktop"]["value"]
     calls = [u for u in v["requests_all"] if "/static/" not in u and not u.endswith("/preview")]
-    assert [u.split("127.0.0.1:")[1].split("/", 1)[1] for u in calls] == ["home/data"]
+    assert calls == [], calls
     assert sum(u.endswith("/preview") for u in v["requests_all"]) <= 1
-    assert "+0.018 pp" in v["demo"]["text"] and "Finding 1.3" in v["demo"]["text"]
+
+
+def test_the_demo_is_labelled_as_sample_data(pages):
+    v = pages["desktop"]["value"]
+    assert v["demo"]["done"] == "true" and v["demo"]["pressed"] == "1" and v["demo"]["steps"] == 5 and v["tag"]
+    assert "+0.228 pp" in v["demo"]["text"] and "sample data:" in v["demo"]["text"] and "Sample data: invented numbers, not results." in v["demo"]["text"]
 
 
 def test_reduced_motion_shows_the_demo_at_once(pages):

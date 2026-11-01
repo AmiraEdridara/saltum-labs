@@ -3,7 +3,8 @@
 import { cached, chartFailed, h, loadPlotly, num, plain, renderTicket, source, table } from "../lib.js";
 
 const TYPE_NAME = { CPI: "CPI", NFP: "Payrolls (NFP)", FOMC: "FOMC" };
-const PERIOD_NAME = { both: "both periods", "2020-01..2023-05": "2020-01 to 2023-05", "2023-06..now": "2023-06 to now" };
+const PERIOD_NAME = { both: "both periods", "2020-01..2023-05": plain("2020-01 to 2023-05", "earlier period"),
+                      "2023-06..now": plain("2023-06 to now", "later period") };
 // Which finding states, in words, whether each type's premium held (findings_v1.md, Section 1).
 const FINDING_FOR = { CPI: "1.2", FOMC: "1.2", NFP: "1.3" };
 const DEFINITIONS = [

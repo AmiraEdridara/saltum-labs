@@ -10,11 +10,11 @@ import urllib.parse
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import codecheck
-from . import home, settings
+from . import settings
 from .auth import AuthError, default_provider
 from .tutor import service as tutor
 from .tutor.tools import ToolRunner
@@ -83,26 +83,13 @@ def with_session(response, value):
 
 # ---------------------------------------------------------------- pages
 @app.get("/")
-def root():
-    """The homepage, for everyone: logged-out visitors land here, logged-in users can still reach it."""
-    return FileResponse(settings.STATIC_DIR / "home.html", headers={"Cache-Control": "no-store"})
-
-
-@app.get("/home/data")
-async def home_data(request: Request):
-    """The homepage's numbers: fixed frozen v1 summaries, public, no parameters (web/home.py). Every other data
-    route needs a login."""
-    if request.query_params:
-        return JSONResponse({"error": "this route takes no parameters"}, status_code=400)
-    try:
-        data = await home.home_data(request.app.state.api_transport, request.app.state.provider.service_token())
-    except httpx.HTTPStatusError as e:              # the API answered with an error (503 while the data updates)
-        return JSONResponse({"error": f"The API answered {e.response.status_code} for {e.request.url.path}."},
-                            status_code=503 if e.response.status_code == 503 else 502)
-    except httpx.HTTPError as e:
-        return JSONResponse({"error": f"The API is not reachable at {settings.API_BASE} ({type(e).__name__}). Start it first."},
-                            status_code=502)
-    return dict(data, signed_in=user_of(request) is not None)
+def root(request: Request):
+    """The homepage, for everyone: logged-out visitors land here, logged-in users can still reach it. It carries no
+    data; a logged-in visitor's page is marked so that it offers the terminal in place of sign-up."""
+    page = (settings.STATIC_DIR / "home.html").read_text(encoding="utf-8")
+    if user_of(request) is not None:
+        page = page.replace("<body>", '<body class="signed-in">', 1)
+    return HTMLResponse(page, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/login")

@@ -197,7 +197,7 @@ def test_invented_numbers_never_read_as_real_results(frame):
     for k, r in frame.items():
         v = r["value"]
         assert v["live_badges"] == 0, k
-        assert not re.search(r"Stage 5|frozen|findings_v1|findings v1|\blive\b|docs/prd", v["pane"], re.I), (k, re.findall(r".{30}(?:Stage 5|frozen|findings|live).{20}", v["pane"]))
+        assert not re.search(r"Stage 5|frozen|findings_v1|findings v1|\blive\b|docs/prd|\b2020-01\b(?!-)|\b2023-0[56]\b(?!-)", v["pane"], re.I), (k, re.findall(r".{30}(?:Stage 5|frozen|findings|live|2020-01|2023-0[56]).{20}", v["pane"]))
 
 
 def test_the_second_event_study_table_needs_no_sideways_scroll_at_1440(frame):

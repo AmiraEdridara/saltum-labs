@@ -10,7 +10,8 @@ const LABELS = { type: "Event type", period: "Period", exclude_flagged: "Exclude
                  include_ordinary: "Show ordinary pairs", d1: "Date 1", d2: "Date 2",
                  live: "Include live data (after {v1}) in the medians" };
 const OPTION_TEXT = { all: "All (side by side)", NFP: "Payrolls (NFP)", both: "Both periods",
-                      "2020-01..2023-05": "2020-01 to 2023-05", "2023-06..now": "2023-06 to now",
+                      "2020-01..2023-05": PREVIEW ? "Earlier period" : "2020-01 to 2023-05",
+                      "2023-06..now": PREVIEW ? "Later period" : "2023-06 to now",
                       true: "Yes", false: "No" };
 
 function el(tag, attrs = {}, ...children) {

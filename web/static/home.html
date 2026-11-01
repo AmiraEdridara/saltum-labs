@@ -27,8 +27,6 @@
   </div>
   <div class="masthead-line">
     <span>Education only · not advice</span>
-    <span>v1 data to <span class="num" data-src="v1_end" data-fmt="text">…</span></span>
-    <span>Local edition</span>
   </div>
 </header>
 
@@ -42,24 +40,11 @@
     <p class="actions">
       <a class="button primary" href="/terminal">Open the terminal</a>
       <a class="button" href="/login?mode=signup" data-signed-out>Create a free account</a>
-      <span class="signed-in-note hidden" data-signed-in>You are logged in.</span>
+      <span class="signed-in-note" data-signed-in>You are logged in.</span>
     </p>
   </section>
 
-  <!-- 2. Stats strip -->
-  <section id="stats" class="stats" aria-label="What the data covers">
-    <dl>
-      <div><dt>Years covered</dt>
-        <dd><span class="num" data-src="stats.first_year" data-fmt="text">…</span>–<span class="num" data-src="stats.last_year" data-fmt="text">…</span></dd></div>
-      <div><dt>Trading days</dt><dd><span class="num" data-src="stats.trading_days" data-fmt="int">…</span></dd></div>
-      <div><dt>Events</dt><dd><span class="num" data-src="stats.events" data-fmt="int">…</span>
-        <span class="unit">event days (<span data-src="stats.two_release_days" data-fmt="int">…</span> had two releases)</span></dd></div>
-      <div><dt>Comparisons</dt><dd><span class="num" data-src="stats.control_pairs" data-fmt="int">…</span> <span class="unit">control pairs</span></dd></div>
-    </dl>
-    <p class="stats-note">CPI, FOMC and payrolls days, SPX and SPXW options, frozen v1.</p>
-  </section>
-
-  <!-- 3. Terminal preview: the real terminal page in a frame, on a fixed sample file (web/static/js/preview.js) -->
+  <!-- 2. Terminal preview: the real terminal page in a frame, on a fixed sample file -->
   <section id="tour" class="tour" aria-labelledby="tour-title">
     <p class="kicker">The terminal</p>
     <h2 id="tour-title">Try the terminal here</h2>
@@ -71,11 +56,11 @@
     <p class="actions"><a class="button primary" href="/terminal">Open the real terminal</a></p>
   </section>
 
-  <!-- 4. Tutor demo -->
+  <!-- 3. Tutor demo, on sample figures -->
   <section id="demo" class="demo" aria-labelledby="demo-title">
     <p class="kicker">The tutor</p>
     <h2 id="demo-title">Two questions, answered from the tables</h2>
-    <p class="note">A scripted example: no live tutor is called and nothing is spent. Every number is a frozen v1 figure.</p>
+    <p class="note">A scripted example on invented sample data: no tutor is called and nothing is spent. <span class="sample-tag">Sample data</span></p>
     <div class="demo-controls">
       <button type="button" class="demo-pick" data-demo="0" aria-pressed="true">Look it up</button>
       <button type="button" class="demo-pick" data-demo="1" aria-pressed="false">Push back</button>
@@ -84,100 +69,72 @@
     <ol class="chat" id="demo-chat" aria-live="polite"></ol>
   </section>
 
-  <!-- 5. Data and method -->
+  <!-- 4. Data and method -->
   <section id="method" class="method" aria-labelledby="method-title">
     <p class="kicker">Data and method</p>
-    <h2 id="method-title">Where the numbers come from</h2>
+    <h2 id="method-title">How the numbers are made</h2>
     <div class="columns">
       <div>
         <h3>Option chains</h3>
-        <p>SPX and SPXW option quotes at the 16:15 ET options close (13:15 on half days), from 2020 on.</p>
+        <p>SPX and SPXW option quotes, taken at the options close each trading day.</p>
         <h3>Implied and actual move</h3>
-        <p>The implied move is the at-the-money straddle at the previous 16:15 close, as a share of the forward. The
-          actual move is the change from that forward to the release-day close.</p>
+        <p>The implied move is what the at-the-money straddle priced the evening before a release. The actual move is
+          how far the index really went by the close on release day.</p>
       </div>
       <div>
         <h3>Baselines</h3>
-        <p>An event is compared with the median implied move of ordinary days within 20 trading days either side, and
-          with <span class="num" data-src="findings.ordinary_pairs" data-fmt="int">…</span> pairs of consecutive ordinary days.</p>
-        <h3>Flagged days</h3>
-        <p><span class="num" data-src="method.surfaces_flagged" data-fmt="int">…</span> of
-          <span class="num" data-src="method.surfaces_drawn" data-fmt="int">…</span> daily surfaces are flagged: their
-          fitted smiles miss by more than 0.5 vol points somewhere, or total variance falls with expiry. Results are
-          shown with and without them. <span class="num" data-src="method.surfaces_failed" data-fmt="int">…</span>
-          trading days have no surface.</p>
+        <p>An event is compared with ordinary days around it, and with pairs of consecutive ordinary days, so a change
+          only counts if it is bigger than what happens anyway.</p>
       </div>
       <div>
-        <h3>Frozen v1 and live</h3>
-        <p>Everything on this page is frozen v1, data to <span class="num" data-src="v1_end" data-fmt="text">…</span>,
-          as recorded in findings_v1.md. In the terminal, rows added later by the daily update are marked
-          <span class="label-live">live</span>, and a premium still missing its following days is marked
-          <span class="label-prov">provisional</span>.</p>
+        <h3>Flagged days</h3>
+        <p>Some daily surfaces fit the quotes badly. They are flagged, and results are shown with and without them.</p>
       </div>
     </div>
   </section>
 
-  <!-- 6. Honest by design -->
+  <!-- 5. Honest by design -->
   <section id="honest" class="honest" aria-labelledby="honest-title">
     <p class="kicker">Honest by design</p>
     <h2 id="honest-title">What we don't claim</h2>
     <ul class="claims">
       <li><h3>Weak results stay labelled weak</h3>
-        <p>The payrolls premium was <span class="num" data-src="findings.premium.NFP.late" data-fmt="pp3">…</span> pp in
-          2023–26 (n <span class="num" data-src="findings.premium.NFP.late_n" data-fmt="int">…</span>) but only
-          <span class="num" data-src="findings.premium.NFP.early" data-fmt="pp3">…</span> pp in 2020–23
-          (n <span class="num" data-src="findings.premium.NFP.early_n" data-fmt="int">…</span>). It did not hold out of
-          sample, so it is shown as not holding (Finding 1.3).</p></li>
+        <p>A result that does not hold in a second period is shown as not holding, even if the first period looked good.</p></li>
       <li><h3>One event is not a pattern</h3>
-        <p>A single release day proves nothing on its own. Results are medians over many events, with their n beside
-          them, and <span class="num" data-src="findings.comparisons_tested" data-fmt="int">…</span> comparisons were
-          tested, so one could pass by chance.</p></li>
+        <p>A single release day proves nothing on its own. Results are medians over many events, with the count beside
+          them, and when many comparisons are tested, one can pass by chance.</p></li>
       <li><h3>S&amp;P 500 options only</h3>
-        <p>One index, one data vendor, 2020 to 2026. Nothing here says a position would have made or lost money after
-          spreads, fees, slippage or margin.</p></li>
+        <p>One index and one data vendor. Nothing here says a position would have made or lost money after spreads,
+          fees, slippage or margin.</p></li>
       <li><h3>Four checks</h3>
-        <p>An out-of-sample period added with the method frozen; ordinary-day controls; vol measured at a fixed strike;
-          and an independent recheck from the raw chains with separate code.</p></li>
+        <p>A second period added after the method was fixed; ordinary-day controls; vol measured at a fixed strike; and
+          an independent recheck from the raw chains with separate code.</p></li>
     </ul>
   </section>
 
-  <!-- 7. Findings -->
+  <!-- 6. Findings, in words: the figures stay in the terminal -->
   <section id="findings" class="findings" aria-labelledby="findings-title">
-    <p class="kicker">Findings v1</p>
+    <p class="kicker">Findings</p>
     <h2 id="findings-title">What survived the controls</h2>
     <div class="cards">
-      <article class="card" id="finding-12" aria-labelledby="f12-title">
-        <p class="card-label">Finding 1.2 · percentage points</p>
-        <h3 id="f12-title">CPI and FOMC days carry a positive implied-move premium over nearby ordinary days</h3>
-        <table class="figures">
-          <caption>Median premium, pp (n)</caption>
-          <thead><tr><th scope="col">Type</th><th scope="col">2020–23</th><th scope="col">2023–26</th><th scope="col">Combined</th></tr></thead>
-          <tbody id="f12-rows"></tbody>
-        </table>
-        <p class="survives">Survived its controls: in both periods and with the COVID crash excluded.</p>
-        <p class="caveat">A rough estimate: the baseline is the median of nearby ordinary days.</p>
-        <p class="plain" id="f12-plain"></p>
+      <article class="card" aria-labelledby="f-premium-title">
+        <p class="card-label">Before the release</p>
+        <h3 id="f-premium-title">CPI and FOMC days carried a bigger priced-in move than ordinary days, and it held in both periods</h3>
+        <p>That describes what was priced in. It does not say whether buying or selling options paid.</p>
       </article>
-      <article class="card" id="finding-51" aria-labelledby="f51-title">
-        <p class="card-label">Finding 5.1 · vol points</p>
-        <h3 id="f51-title">After CPI, implied vol and skew fell more than on ordinary days; after payrolls the vol, after FOMC the skew</h3>
-        <table class="figures">
-          <caption>Event minus ordinary-day median, vol points [90% interval] (n)</caption>
-          <thead><tr><th scope="col">Type</th><th scope="col">Measure</th><th scope="col">All dates</th><th scope="col">Excluding flagged</th></tr></thead>
-          <tbody id="f51-rows"></tbody>
-        </table>
-        <p class="survives">Survived both controls: the interval excludes 0 with all dates and excluding flagged dates.</p>
-        <p class="caveat">Several intervals end close to 0, and <span class="num" data-src="findings.comparisons_tested" data-fmt="int">…</span>
-          combinations were tested, so one could pass by chance.</p>
-        <p class="plain" id="f51-plain"></p>
+      <article class="card" aria-labelledby="f-after-title">
+        <p class="card-label">After the release</p>
+        <h3 id="f-after-title">After CPI, implied vol and skew fell more than on ordinary days; after payrolls the vol, after FOMC the skew</h3>
+        <p>Many comparisons were tested, so one of these could have passed by chance.</p>
       </article>
     </div>
+    <p class="actions"><a class="button primary" href="/terminal">See the numbers in the terminal</a></p>
   </section>
 
-  <!-- 8. Coming next -->
+  <!-- 7. Coming next -->
   <section id="next" class="next" aria-labelledby="next-title">
     <p class="kicker">Coming next</p>
-    <h2 id="next-title">After version 1</h2>
+    <h2 id="next-title">What we're building</h2>
     <ul class="next-list">
       <li><h3>Backtests</h3><p>Test a rule on past events, with costs, and see why a pattern is not a trade.</p></li>
       <li><h3>More underlyings</h3><p>Other indices and single stocks, with the same method and labels.</p></li>
@@ -185,7 +142,7 @@
     </ul>
   </section>
 
-  <!-- 9. Pricing -->
+  <!-- 8. Pricing -->
   <section id="pricing" class="pricing" aria-labelledby="pricing-title">
     <p class="kicker">Pricing</p>
     <h2 id="pricing-title">Two plans</h2>
@@ -193,28 +150,26 @@
       <article class="plan">
         <h3>Student</h3>
         <p class="price">Free</p>
-        <p><span class="num" data-src="pricing.student_daily" data-fmt="int">…</span> tutor questions a day, and every page.</p>
+        <p><span class="num">{{tutor_daily_free}}</span> tutor questions a day, and every page.</p>
         <a class="button primary" href="/login?mode=signup" data-signed-out>Create a free account</a>
-        <a class="button primary hidden" href="/terminal" data-signed-in>Open the terminal</a>
+        <a class="button primary" href="/terminal" data-signed-in>Open the terminal</a>
       </article>
       <article class="plan">
         <h3>Tutor plus</h3>
-        <p class="price">£<span class="num" data-src="pricing.tutor_plus_gbp_month" data-fmt="int">…</span> a month</p>
-        <p><span class="num" data-src="pricing.tutor_plus_monthly" data-fmt="int">…</span> tutor questions a month, and every page.</p>
+        <p class="price">£<span class="num">{{tutor_plus_gbp_month}}</span> a month</p>
+        <p><span class="num">{{tutor_monthly_plus}}</span> tutor questions a month, and every page.</p>
         <a class="button" href="/login?mode=signup" data-signed-out>Sign up</a>
-        <a class="button hidden" href="/terminal" data-signed-in>Open the terminal</a>
+        <a class="button" href="/terminal" data-signed-in>Open the terminal</a>
         <p class="note">Payments aren't available yet: sign-up starts on the free plan.</p>
       </article>
     </div>
   </section>
 
-  <p class="load-error hidden" id="load-error" role="alert"></p>
 </main>
 
-<!-- 10. Footer -->
+<!-- 9. Footer -->
 <footer id="footer" class="footer">
   <p><strong>Educational use only. Not financial advice.</strong> Past results describe one sample of market history.</p>
-  <p>Local version, running on this computer only · v1 data to <span class="num" data-src="v1_end" data-fmt="text">…</span></p>
 </footer>
 </body>
 </html>
