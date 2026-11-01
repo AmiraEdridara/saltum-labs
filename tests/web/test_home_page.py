@@ -1,6 +1,6 @@
 """Page 6, the homepage: a public page with no real numbers. GET / for everyone, no data route and no data request, the
-nine sections, a tutor demo on sample figures, findings in words, no internal wording, phone width, reduced motion. The
-terminal preview in section 2 is tested in test_preview.py."""
+six sections, a tutor demo on sample figures, findings in words, no internal wording, phone width, reduced motion. Also the
+public /method page, under the same rules. The terminal preview in section 2 is tested in test_preview.py."""
 import json
 import re
 
@@ -16,7 +16,12 @@ SAMPLE = json.loads((STATIC / "preview" / "sample.json").read_text(encoding="utf
 HTML = (STATIC / "home.html").read_text(encoding="utf-8")
 JS = (STATIC / "js" / "home.js").read_text(encoding="utf-8")
 DEMO = (STATIC / "js" / "home_demo.js").read_text(encoding="utf-8")
-SECTIONS = ["hero", "tour", "demo", "method", "honest", "findings", "next", "pricing", "footer"]
+SECTIONS = ["hero", "tour", "demo", "findings", "honest", "pricing", "footer"]
+POINTS = ["Every event is compared with ordinary days.", "Results are checked in a second period.", "Weak results stay labelled weak.",
+          "Education only: nothing here says a trade would have paid."]
+METHOD_TEXT = ["How the numbers are made", "SPX and SPXW option quotes", "Implied and actual move", "Baselines", "Flagged days", "What we don't claim",
+               "Weak results stay labelled weak", "One event is not a pattern", "S&amp;P 500 options only", "Four checks",
+               "an independent recheck from the raw chains with separate code."]
 INTERNAL = r"frozen|findings_v1|findings v1|\bv1\b|\blive\b|Stage \d|local version|local edition|on this computer|ThetaData|FRED|provisional"
 NUMBER = r"(?<![\w.:])[+−-]?\d[\d,]*(?:[.:]\d+)?%?"
 
@@ -69,6 +74,23 @@ def test_every_data_route_needs_a_login(client):
                  "/account/me", "/tutor/status"):
         assert client.get(path).status_code == 401, path
     assert client.get("/terminal").status_code == 303
+
+
+def test_the_method_page_is_public_and_holds_the_full_text(client):
+    r = client.get("/method")
+    assert r.status_code == 200 and "text/html" in r.headers["content-type"]
+    assert all(s in re.sub(r"\s+", " ", r.text) for s in METHOD_TEXT)
+    assert r.headers["content-security-policy"] == client.get("/").headers["content-security-policy"]
+    assert "<script" not in r.text
+
+
+def test_the_homepage_keeps_only_the_short_version(client):
+    page = client.get("/").text
+    assert all(f"<li>{p}</li>" in page for p in POINTS) and '<a href="/method">Read the full method</a>' in page
+    assert '<a href="/method">Method</a>' in page and "How the numbers are made" not in page and "What we don't claim" not in page
+    assert "What we're building" not in page and 'id="next"' not in page
+    head, pricing = page.split('id="pricing"')
+    assert pricing.index("Coming next: backtests, more underlyings and alerts.") < pricing.index("Two plans")
 
 
 def test_security_policy_is_unchanged(client):
@@ -135,7 +157,7 @@ def test_the_guard_sees_a_real_number():
 
 
 def test_no_real_number_is_in_the_homepage_files(client):
-    for name, text in (("/", client.get("/").text), ("home.js", JS), ("home_demo.js", DEMO)):
+    for name, text in (("/", client.get("/").text), ("/method", client.get("/method").text), ("home.js", JS), ("home_demo.js", DEMO)):
         assert real_in(text) == [], name
 
 
@@ -154,13 +176,13 @@ def test_no_median_from_the_api_is_on_the_homepage(client):
 
 
 def test_no_homepage_file_has_internal_wording(client):
-    for name, text in (("/", client.get("/").text), ("home_demo.js", DEMO)):
+    for name, text in (("/", client.get("/").text), ("/method", client.get("/method").text), ("home_demo.js", DEMO)):
         text = re.sub(r"<!--.*?-->|<[^>]+>", " ", text, flags=re.S)         # the words, not the markup (aria-live)
         assert not re.search(INTERNAL, text, re.I), (name, re.findall(rf".{{20}}(?:{INTERNAL}).{{20}}", text, re.I))
 
 
 def test_no_public_page_has_the_real_v1_date(client):
-    for path in ("/", "/login", "/preview"):
+    for path in ("/", "/method", "/login", "/preview"):
         assert str(config.V1_END) not in client.get(path).text, path
 
 
@@ -198,7 +220,8 @@ EXTRACT = r"""(() => {
            edu_visible: edu.top >= 0 && edu.bottom <= innerHeight,
            pricing: { plans_left: document.querySelector('.plans').getBoundingClientRect().left, plan_left: document.querySelector('.plan').getBoundingClientRect().left,
                       heading_left: document.querySelector('#pricing h2').getBoundingClientRect().left },
-           section_padding: parseFloat(getComputedStyle(document.getElementById('method')).paddingTop),
+           chat_left: document.getElementById('demo-chat').getBoundingClientRect().left, controls_left: document.querySelector('.demo-controls').getBoundingClientRect().left,
+           section_padding: parseFloat(getComputedStyle(document.getElementById('honest')).paddingTop),
            cards: [...document.querySelectorAll('#findings .card')].map(txt), tag: vis(document.querySelector('#demo .sample-tag')),
            demo: { done: document.getElementById('demo-chat').dataset.done, steps: steps.length, entering: steps.filter((s) => s.classList.contains('enter')).length,
                    transition: steps[0] ? getComputedStyle(steps[0]).transitionDuration : null, text: txt(document.getElementById('demo-chat')),
@@ -209,6 +232,12 @@ EXTRACT = r"""(() => {
            links: Object.fromEntries([...document.querySelectorAll('.actions a, .plan a')].filter(vis).map((a) => [txt(a), a.getAttribute('href')])) };
 })()"""
 READY = "document.body.dataset.ready === 'true'"
+METHOD = r"""(() => ({ text: document.body.innerText, scrollX: document.documentElement.scrollWidth > innerWidth,
+  columns: new Set([...document.querySelectorAll('.columns > div')].map((e) => e.getBoundingClientRect().left)).size,
+  topics: [...document.querySelectorAll('.columns > div')].map((e) => [...e.querySelectorAll('h3')].map((x) => x.textContent)),
+  labels: [...document.querySelectorAll('.kicker')].map((e) => e.textContent),
+  heads: [...document.querySelectorAll('h1, h2')].map((e) => e.textContent), current: document.querySelector('nav a[aria-current]').getAttribute('href'),
+  nav: [...document.querySelectorAll('nav a')].map((a) => a.getAttribute('href')) }))()"""
 REDUCED = [{"name": "prefers-reduced-motion", "value": "reduce"}]
 
 
@@ -225,6 +254,9 @@ def pages(browser):
                         extract=EXTRACT, timeout_s=60),
         "phone": dict(url="/", logged_out=True, width=390, height=844, mobile=True, media=REDUCED, wait=READY, extract=EXTRACT),
         "signed_in": dict(url="/", wait=READY, media=REDUCED, extract=EXTRACT),
+        "method": dict(url="/method", logged_out=True, extract=METHOD),
+        "method_phone": dict(url="/method", logged_out=True, width=390, height=844, mobile=True, extract=METHOD),
+        "method_tablet": dict(url="/method", logged_out=True, width=900, height=800, extract=METHOD),
     }
     out = browser.visit(list(visits.values()))
     return {k: r for k, r in zip(visits, out)}
@@ -235,7 +267,7 @@ def test_pages_render_without_errors(pages):
         assert r["ready"] and r["error"] is None and r["errors"] == [], (k, r["error"], r["errors"])
 
 
-def test_the_nine_sections_render_in_order(pages):
+def test_the_six_sections_render_in_order(pages):
     for k in ("desktop", "phone"):
         secs = pages[k]["value"]["sections"]
         assert [s["id"] for s in secs] == SECTIONS
@@ -251,6 +283,28 @@ def test_no_real_number_is_on_the_rendered_page(pages):
         assert not re.search(INTERNAL, text, re.I), k
         for tok in re.findall(NUMBER, text):                          # every number on the page is a known, invented or public one
             assert tok.replace("£", "") in ALLOWED, (k, tok)
+
+
+def test_no_real_number_is_on_the_rendered_method_page(pages):
+    for k in ("method", "method_phone"):
+        v = pages[k]["value"]
+        assert real_in(v["text"]) == [] and not re.search(INTERNAL, v["text"], re.I), k
+        assert set(re.findall(NUMBER, v["text"])) == {"500"}, k       # the index's name, and nothing else
+        assert not v["scrollX"], k
+    v = pages["method"]["value"]
+    assert v["heads"] == ["The full method", "How the numbers are made", "What we don't claim"] and v["current"] == "/method"
+    assert v["nav"] == ["/#tour", "/method", "/#findings", "/#pricing", "/terminal"]
+
+
+def test_the_method_topics_are_columns_that_narrow_to_a_stack(pages):
+    assert pages["method"]["value"]["topics"] == [["Option chains"], ["Implied and actual move"], ["Baselines"], ["Flagged days"]]
+    assert {k: pages[k]["value"]["columns"] for k in ("method", "method_tablet", "method_phone")} == {"method": 4, "method_tablet": 2, "method_phone": 1}
+    assert pages["method"]["value"]["labels"] == ["Method", "Data and method", "Limits"]
+
+
+def test_the_demo_chat_starts_at_the_buttons_left_edge(pages):
+    for k in ("desktop", "phone"):
+        assert pages[k]["value"]["chat_left"] == pages[k]["value"]["controls_left"], k
 
 
 def test_the_findings_are_words_with_a_link_to_the_numbers(pages):

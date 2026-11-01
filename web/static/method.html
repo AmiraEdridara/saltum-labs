@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Method · Saltum Labs</title>
+  <meta name="description" content="How Saltum Labs makes its numbers, and what it does not claim. Not signals, not advice.">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/fonts.css">
+  <link rel="stylesheet" href="/static/css/home.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+
+<header class="masthead">
+  <div class="masthead-title">
+    <a class="wordmark" href="/">Saltum Labs</a>
+    <nav aria-label="Site">
+      <a href="/#tour">Tour</a>
+      <a href="/method" aria-current="page">Method</a>
+      <a href="/#findings">Findings</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/terminal" class="nav-terminal">Open the terminal</a>
+    </nav>
+  </div>
+  <div class="masthead-line">
+    <span>Education only · not advice</span>
+  </div>
+</header>
+
+<main id="main">
+  <section id="method-head" class="page-head" aria-labelledby="page-title">
+    <p class="kicker">Method</p>
+    <h1 id="page-title">The full method</h1>
+  </section>
+
+  <section id="method" class="method" aria-labelledby="method-title">
+    <p class="kicker">Data and method</p>
+    <h2 id="method-title">How the numbers are made</h2>
+    <div class="columns">
+      <div>
+        <h3>Option chains</h3>
+        <p>SPX and SPXW option quotes, taken at the options close each trading day.</p>
+      </div>
+      <div>
+        <h3>Implied and actual move</h3>
+        <p>The implied move is what the at-the-money straddle priced the evening before a release. The actual move is
+          how far the index really went by the close on release day.</p>
+      </div>
+      <div>
+        <h3>Baselines</h3>
+        <p>An event is compared with ordinary days around it, and with pairs of consecutive ordinary days, so a change
+          only counts if it is bigger than what happens anyway.</p>
+      </div>
+      <div>
+        <h3>Flagged days</h3>
+        <p>Some daily surfaces fit the quotes badly. They are flagged, and results are shown with and without them.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="honest" class="honest" aria-labelledby="honest-title">
+    <p class="kicker">Limits</p>
+    <h2 id="honest-title">What we don't claim</h2>
+    <ul class="claims">
+      <li><h3>Weak results stay labelled weak</h3>
+        <p>A result that does not hold in a second period is shown as not holding, even if the first period looked good.</p></li>
+      <li><h3>One event is not a pattern</h3>
+        <p>A single release day proves nothing on its own. Results are medians over many events, with the count beside
+          them, and when many comparisons are tested, one can pass by chance.</p></li>
+      <li><h3>S&amp;P 500 options only</h3>
+        <p>One index and one data vendor. Nothing here says a position would have made or lost money after spreads,
+          fees, slippage or margin.</p></li>
+      <li><h3>Four checks</h3>
+        <p>A second period added after the method was fixed; ordinary-day controls; vol measured at a fixed strike; and
+          an independent recheck from the raw chains with separate code.</p></li>
+    </ul>
+  </section>
+</main>
+
+<footer id="footer" class="footer">
+  <p><strong>Educational use only. Not financial advice.</strong> Past results describe one sample of market history.</p>
+</footer>
+</body>
+</html>

@@ -57,7 +57,7 @@ p { margin: 0 0 0.8rem; }
 .wordmark { display: inline-flex; align-items: center; gap: 8px; font: 500 20px/1 var(--serif); letter-spacing: -0.01em; text-decoration: none; }
 .masthead nav { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; font-weight: 500; }
 .masthead nav a { text-decoration: none; color: var(--ink-soft); }
-.masthead nav a:hover { color: var(--ink); }
+.masthead nav a:hover, .masthead nav a[aria-current] { color: var(--ink); }
 .masthead nav .nav-terminal { color: var(--accent); }
 
 /* ---------------------------------------------------------------- sections */
@@ -65,6 +65,8 @@ main > section, .footer { padding: clamp(43px, 6vw, 75px) var(--gutter); border-
 main > section > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
 
 .hero { text-align: center; padding-top: clamp(43px, 6vw, 64px); }
+.page-head { padding-bottom: 0; border-bottom: 0; }
+.page-head h1 { font-size: clamp(38px, 5.2vw, 68px); line-height: 1.02; letter-spacing: -0.02em; margin-bottom: 0; }
 .hero h1 { font-size: clamp(38px, 5.2vw, 68px); line-height: 1.02; letter-spacing: -0.02em; max-width: 19ch; margin: 0 auto; }
 .tagline { font: 400 clamp(20px, 2.2vw, 26px)/1.25 var(--serif); letter-spacing: -0.01em; margin: 24px auto 0; }
 .tagline span { color: var(--accent); }
@@ -102,7 +104,8 @@ main > section > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
 }
 .demo-controls button:hover { background: var(--paper-2); }
 .demo-controls button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-.chat { list-style: none; padding: 0; display: grid; gap: 12px; max-width: 760px; min-height: 18rem; }
+.chat { list-style: none; padding: 0; display: grid; gap: 12px; max-width: 760px; min-height: 18rem;
+        margin-left: max(0px, calc((100% - 1152px) / 2)); }   /* the left edge of the 1152px column above it */
 .step { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 12px; align-items: start;
         transition: opacity var(--enter), transform var(--enter); }
 .step.enter { opacity: 0; transform: translateY(6px); }
@@ -114,16 +117,20 @@ main > section > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
 .sample-tag { color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
 .step.caution .bubble { font-style: italic; border-style: dashed; }
 
-/* ---------------------------------------------------------------- method, honest, findings, next */
-.columns, .claims, .next-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding: 0; list-style: none; }
+/* ---------------------------------------------------------------- findings, honest, the method page */
+.columns, .claims { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; padding: 0; list-style: none; }
 .claims { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.columns > div, .claims > li, .next-list > li { border-top: 1px solid var(--rule); padding-top: 16px; }
+.columns > div, .claims > li { border-top: 1px solid var(--rule); padding-top: 16px; }
+.points { list-style: none; padding: 0; margin-bottom: 0; }
+.points li { border-top: 1px solid var(--rule); padding: 12px 0; font: 400 clamp(19px, 1.8vw, 22px)/1.3 var(--serif); }
+.more { margin-top: 16px; margin-bottom: 0; }
 .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
 .card { border: 1px solid var(--rule); border-radius: 6px; padding: 24px; background: var(--card); min-width: 0; }
 .card p:last-child { margin: 0; color: var(--ink-soft); }
 .card-label { color: var(--ink-soft); border-bottom: 1px solid var(--rule); padding-bottom: 8px; }
 
 /* ---------------------------------------------------------------- pricing, footer */
+.coming-next { color: var(--ink-soft); padding-bottom: 16px; margin-bottom: 32px; border-bottom: 1px solid var(--rule); }
 .plans { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 28px; justify-content: start; }
 .plan { border: 1px solid var(--rule); border-radius: 6px; padding: 24px; background: var(--card); }
 .price { font-family: var(--serif); font-size: 2rem; margin-bottom: 0.4rem; }
@@ -132,12 +139,17 @@ main > section > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
 .footer { border-top: 1px solid var(--rule); border-bottom: 0; font-size: 0.92rem; color: var(--ink-soft); text-align: center; }
 .footer strong { color: var(--ink); }
 
+/* ---------------------------------------------------------------- narrower widths */
+@media (max-width: 1100px) {
+  .columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* ---------------------------------------------------------------- phone width */
 @media (max-width: 760px) {
   .window { margin-left: -10px; margin-right: -10px; }
   .window iframe { height: calc(75vh - 33px); height: calc(75svh - 33px); }
   .window-dots { display: none; }
-  .columns, .claims, .next-list, .cards, .plans { grid-template-columns: minmax(0, 1fr); }
+  .columns, .claims, .cards, .plans { grid-template-columns: minmax(0, 1fr); }
   .step { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .who { padding-top: 0; }
   .card { padding: 16px 12px; }

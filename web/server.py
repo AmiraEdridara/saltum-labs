@@ -92,6 +92,12 @@ def root(request: Request):
     return HTMLResponse(page, headers={"Cache-Control": "no-store"})
 
 
+@app.get("/method")
+def method_page():
+    """The method in words, for everyone. Like the homepage, it holds no real numbers or dates."""
+    return FileResponse(settings.STATIC_DIR / "method.html")
+
+
 @app.get("/login")
 def login_page():
     return FileResponse(settings.STATIC_DIR / "login.html")

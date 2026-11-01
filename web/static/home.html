@@ -19,7 +19,7 @@
     <a class="wordmark" href="/">Saltum Labs</a>
     <nav aria-label="Homepage">
       <a href="#tour">Tour</a>
-      <a href="#method">Method</a>
+      <a href="/method">Method</a>
       <a href="#findings">Findings</a>
       <a href="#pricing">Pricing</a>
       <a href="/terminal" class="nav-terminal">Open the terminal</a>
@@ -69,50 +69,7 @@
     <ol class="chat" id="demo-chat" aria-live="polite"></ol>
   </section>
 
-  <!-- 4. Data and method -->
-  <section id="method" class="method" aria-labelledby="method-title">
-    <p class="kicker">Data and method</p>
-    <h2 id="method-title">How the numbers are made</h2>
-    <div class="columns">
-      <div>
-        <h3>Option chains</h3>
-        <p>SPX and SPXW option quotes, taken at the options close each trading day.</p>
-        <h3>Implied and actual move</h3>
-        <p>The implied move is what the at-the-money straddle priced the evening before a release. The actual move is
-          how far the index really went by the close on release day.</p>
-      </div>
-      <div>
-        <h3>Baselines</h3>
-        <p>An event is compared with ordinary days around it, and with pairs of consecutive ordinary days, so a change
-          only counts if it is bigger than what happens anyway.</p>
-      </div>
-      <div>
-        <h3>Flagged days</h3>
-        <p>Some daily surfaces fit the quotes badly. They are flagged, and results are shown with and without them.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- 5. Honest by design -->
-  <section id="honest" class="honest" aria-labelledby="honest-title">
-    <p class="kicker">Honest by design</p>
-    <h2 id="honest-title">What we don't claim</h2>
-    <ul class="claims">
-      <li><h3>Weak results stay labelled weak</h3>
-        <p>A result that does not hold in a second period is shown as not holding, even if the first period looked good.</p></li>
-      <li><h3>One event is not a pattern</h3>
-        <p>A single release day proves nothing on its own. Results are medians over many events, with the count beside
-          them, and when many comparisons are tested, one can pass by chance.</p></li>
-      <li><h3>S&amp;P 500 options only</h3>
-        <p>One index and one data vendor. Nothing here says a position would have made or lost money after spreads,
-          fees, slippage or margin.</p></li>
-      <li><h3>Four checks</h3>
-        <p>A second period added after the method was fixed; ordinary-day controls; vol measured at a fixed strike; and
-          an independent recheck from the raw chains with separate code.</p></li>
-    </ul>
-  </section>
-
-  <!-- 6. Findings, in words: the figures stay in the terminal -->
+  <!-- 4. Findings, in words: the figures stay in the terminal -->
   <section id="findings" class="findings" aria-labelledby="findings-title">
     <p class="kicker">Findings</p>
     <h2 id="findings-title">What survived the controls</h2>
@@ -131,19 +88,22 @@
     <p class="actions"><a class="button primary" href="/terminal">See the numbers in the terminal</a></p>
   </section>
 
-  <!-- 7. Coming next -->
-  <section id="next" class="next" aria-labelledby="next-title">
-    <p class="kicker">Coming next</p>
-    <h2 id="next-title">What we're building</h2>
-    <ul class="next-list">
-      <li><h3>Backtests</h3><p>Test a rule on past events, with costs, and see why a pattern is not a trade.</p></li>
-      <li><h3>More underlyings</h3><p>Other indices and single stocks, with the same method and labels.</p></li>
-      <li><h3>Alerts</h3><p>A note before an event, with what past events of that type showed.</p></li>
+  <!-- 5. Honest by design: the full text is on /method -->
+  <section id="honest" class="honest" aria-labelledby="honest-title">
+    <p class="kicker">The method</p>
+    <h2 id="honest-title">Honest by design</h2>
+    <ul class="points">
+      <li>Every event is compared with ordinary days.</li>
+      <li>Results are checked in a second period.</li>
+      <li>Weak results stay labelled weak.</li>
+      <li>Education only: nothing here says a trade would have paid.</li>
     </ul>
+    <p class="more"><a href="/method">Read the full method</a></p>
   </section>
 
-  <!-- 8. Pricing -->
+  <!-- 6. Pricing -->
   <section id="pricing" class="pricing" aria-labelledby="pricing-title">
+    <p class="coming-next">Coming next: backtests, more underlyings and alerts.</p>
     <p class="kicker">Pricing</p>
     <h2 id="pricing-title">Two plans</h2>
     <div class="plans">
@@ -167,7 +127,7 @@
 
 </main>
 
-<!-- 9. Footer -->
+<!-- Footer -->
 <footer id="footer" class="footer">
   <p><strong>Educational use only. Not financial advice.</strong> Past results describe one sample of market history.</p>
 </footer>
