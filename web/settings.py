@@ -17,6 +17,9 @@ PLANS = ("student", "tutor_plus")               # docs/prd.md, Page 4 decisions
 TUTOR_DAILY_FREE = 7                            # placeholder: the real plan limits and prices are private
 TUTOR_MONTHLY_PLUS = 250                        # placeholder
 TUTOR_PLUS_GBP_MONTH = 12                       # placeholder
+# The terminal's data credit: served with the logged-in account, so it is never in a public file.
+TERMINAL_FOOTER = ("Data: SPX and SPXW options from ThetaData; Treasury bills and VIX from FRED.",
+                   "16:15 ET snapshots, 2020-01 to the latest close.")
 
 # ------------------------------------------------------------ AI tutor (docs/prd.md, Page 4)
 TUTOR_MODEL_SIMPLE = "claude-haiku-5-5"          # definitions

@@ -1,7 +1,7 @@
 // The tutor panel. Questions go to this server (POST /tutor/ask), which calls the Claude API; the browser never
 // holds an API key. Answers are shown as plain text (never as HTML). Saved sessions are listed inside the panel
 // (Sessions): open, start a new one, rename, delete. The current session stays open while the list is shown.
-import { get, send } from "./api.js";
+import { PREVIEW, get, send } from "./api.js";
 import { h } from "./lib.js";
 
 let sessionId = null;
@@ -27,8 +27,9 @@ function addMessage(role, text, extra = {}) {
     h("p", { class: "who" }, role === "user" ? "You" : "Tutor"),
     role === "user" ? h("p", {}, text) : paragraphs(text),
     extra.sources?.length ? h("p", { class: "source" }, "Tools read: ", h("code", {}, extra.sources.join(", "))) : null);
-  $("tutor-log").append(el);
-  el.scrollIntoView({ block: "end" });
+  const log = $("tutor-log");
+  log.append(el);
+  log.scrollTop = log.scrollHeight;                 // the log only, so a page around this one never scrolls
   return el;
 }
 
@@ -153,6 +154,12 @@ export async function initTutor({ context }) {
     }
     if (!saves) label("Sessions are not saved on your plan.");
   } catch { /* the panel still works; errors show when asking */ }
+  if (PREVIEW) {                                    // look-only: a sample conversation, and nothing can be sent
+    await openSession(1);
+    q.disabled = button.disabled = true;
+    q.placeholder = "Open the real terminal to ask";
+    $("tutor-left").textContent = "Preview: a sample conversation. The tutor is not called.";
+  }
   const submit = async (e) => {
     e?.preventDefault();
     const question = q.value.trim();

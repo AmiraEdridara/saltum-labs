@@ -1,7 +1,7 @@
 // Page 3: the Event index (docs/prd.md). One table of every event, and the Stage 5b summary of which skew
 // effects held up against ordinary days. Every number comes from GET /events/index; per-day flags come from
 // GET /dates. The browser only formats and sorts.
-import { cached, h, num, renderTicket, source } from "../lib.js";
+import { cached, h, num, plain, renderTicket, source } from "../lib.js";
 
 const TYPE_NAME = { CPI: "CPI", NFP: "Payrolls (NFP)", FOMC: "FOMC", "CPI+FOMC": "CPI+FOMC", ordinary: "ordinary" };
 const NO_MOVE = "no same-day SPXW expiry, so no implied move";
@@ -29,7 +29,7 @@ function failed(what, err) {
 function summary(ix) {
   const d = ix.data;
   const box = h("section", { class: "ix-summary", "aria-labelledby": "ix-summary-title" },
-    h("h2", { id: "ix-summary-title" }, "Summary: event days against ordinary days (Stage 5b)"));
+    h("h2", { id: "ix-summary-title" }, plain("Summary: event days against ordinary days (Stage 5b)", "Summary: event days against ordinary days")));
   if (!d.summary.length) {
     box.append(h("p", { class: "note summary-note" }, d.summary_note));
     return box;

@@ -2,7 +2,7 @@
 // Two dates; by default the day before an event and the event day. Every number comes from the API; the
 // browser only formats, picks which expiries to draw, and takes the difference of two days' metrics for a
 // pair that has no stored change.
-import { cached, chartFailed, h, loadPlotly, num, renderTicket, source, table } from "../lib.js";
+import { cached, chartFailed, h, loadPlotly, num, plain, renderTicket, source, table } from "../lib.js";
 
 const NAMES = { CPI: "CPI", NFP: "payrolls", FOMC: "FOMC decision" };       // config.VOL_PAGE_EVENT_NAMES
 const SMILE_TARGETS = [14, 28, 45, 63, 91, 126, 168];                       // the prototype's smile_targets
@@ -27,7 +27,7 @@ const gapDays = (a, b) => Math.round((utc(b) - utc(a)) / 864e5);
 const dlabel = (c) => (c > 0.505 ? Math.round((1 - c) * 100) + "Δ put" : c < 0.495 ? Math.round(c * 100) + "Δ call" : "ATM");
 const f2 = (v) => (v === null || v === undefined ? "n/a" : Number(v).toFixed(2));
 // The prototype's metrics sentence (vol_page.py), from the API's surface_metrics row.
-const metricsText = (m) => `Skew metrics (README, Stage 5): at 30 days, ATM vol ${f2(m.atm30)}%, 25-delta risk reversal ${f2(m.rr25_30)} `
+const metricsText = (m) => `${plain("Skew metrics (README, Stage 5)", "Skew metrics")}: at 30 days, ATM vol ${f2(m.atm30)}%, 25-delta risk reversal ${f2(m.rr25_30)} `
   + `and put wing (10-delta put minus ATM) ${f2(m.wing10_30)} vol points; at the shortest expiry (${m.short_dte} days) `
   + `${f2(m.atm_short)}%, ${f2(m.rr25_short)} and ${f2(m.wing10_short)}.`;
 function mix(a, b, t) {
@@ -246,15 +246,17 @@ function skewSection(st, days, pair, skew) {
     changeFrom = skew ? skew.data.change : pair;
     fixed = changeFrom.d_atm30_fixed_strike;
     sources = [...sources, "event_skew_changes", "event_fixed_strike"];
-    note = `Event pair (${pair.event_type}): the change and the fixed-strike change are the stored Stage 5 and 5b numbers.`;
+    note = plain(`Event pair (${pair.event_type}): the change and the fixed-strike change are the stored Stage 5 and 5b numbers.`,
+                 `Event pair (${pair.event_type}): the day before and the event day, in invented sample numbers.`);
   } else if (pair) {
     changeFrom = pair;
     fixed = pair.d_atm30_fixed_strike;
     sources = [...sources, "control_pair_changes"];
-    note = "One of the 100 ordinary-day control pairs: the change and the fixed-strike change are the stored Stage 5b numbers.";
+    note = plain("One of the 100 ordinary-day control pairs: the change and the fixed-strike change are the stored Stage 5b numbers.",
+                 "An ordinary-day control pair, in invented sample numbers.");
   } else {
     note = "Not an event pair or a control pair: the change is Date 2 minus Date 1 of the numbers above. "
-         + "The fixed-strike change exists only for event pairs and the 100 control pairs.";
+         + `The fixed-strike change exists only for event pairs and the ${plain("100 ", "")}control pairs.`;
   }
   const cell = (v, k) => h("td", { class: "r num", "data-key": k, "data-value": v ?? "" }, num(v, 3));
   const change = (key, dkey) => {
@@ -294,8 +296,11 @@ function caveats(days) {
 }
 
 // ------------------------------------------------------------ controls: the two-date picker
-function picker(st, dates, pairs, ctx) {
+function picker(st, dates, pairs, ctx, compact) {
   const list = dates.data.dates;
+  // In a narrow pane the same words, shortened to fit a closed list.
+  const brief = (t) => (compact ? t.replace(" and day before ", ", ").replaceAll(" decision", "").replace(" and ", ", ") : t);
+  const flag = compact ? " ⚑" : " (flagged)";
   const byYear = new Map();
   for (const d of list) {
     if (!byYear.has(d.date.slice(0, 4))) byYear.set(d.date.slice(0, 4), []);
@@ -303,7 +308,7 @@ function picker(st, dates, pairs, ctx) {
   }
   const optText = (d) => {
     const lab = labelFor(d);
-    return `${lab ? "◆ " : ""}${fmtDate(d.date)}${lab ? " · " + lab : ""}${d.flagged ? " (flagged)" : ""}`;
+    return `${lab ? "◆ " : ""}${fmtDate(d.date)}${lab ? " · " + brief(lab) : ""}${d.flagged ? flag : ""}`;
   };
   const dateSelect = (key) => {
     const sel = h("select", { "aria-label": key === "d1" ? "Date 1" : "Date 2", "data-picker": key,
@@ -316,7 +321,7 @@ function picker(st, dates, pairs, ctx) {
              sel, h("button", { type: "button", "aria-label": "Later date", onclick: step(1), disabled: i < 0 || i >= list.length - 1 }, "›"));
   };
   const cur = `${st.params.d1}|${st.params.d2}`;
-  const pairText = (r) => `${r.event_type}: day before / day of · ${shortDate(r.day_before)} – ${fmtDate(r.event_date)}${r.flagged ? " (flagged)" : ""}`;
+  const pairText = (r) => `${r.event_type}${compact ? "" : ": day before / day of"} · ${shortDate(r.day_before)} – ${fmtDate(r.event_date)}${r.flagged ? flag : ""}`;
   const pairSel = h("select", { "aria-label": "Jump to a pair", "data-picker": "pair",
                                 onchange: (e) => { const [d1, d2] = e.target.value.split("|"); if (d2) ctx.setParams(st.pane, { d1, d2 }); } },
     h("option", { value: "" }, "Jump to a pair…"),
@@ -334,7 +339,7 @@ function picker(st, dates, pairs, ctx) {
     h("div", { class: "controls-row" }, pairSel,
       h("button", { type: "button", onclick: prevPair ? go(prevPair) : null, disabled: !prevPair, "data-action": "prev-pair" }, "‹ Previous event pair"),
       h("button", { type: "button", onclick: nextPair ? go(nextPair) : null, disabled: !nextPair, "data-action": "next-pair" }, "Next event pair ›")),
-    h("p", { class: "muted small" }, "◆ marks event days and the days before them. Event pairs and the 100 ordinary control pairs are in the jump list."));
+    h("p", { class: "muted small" }, `◆ marks event days and the days before them. Event pairs and the ${plain("100 ", "")}ordinary control pairs are in the jump list.`));
 }
 
 function options(st, ctx, onReset) {
@@ -389,7 +394,7 @@ export async function render(container, paneId, params, ctx) {
   const reset = () => plots.forEach((el, k) => { if (k.startsWith("surface") && el._fullLayout?.scene) window.Plotly.relayout(el, { "scene.camera": camera(narrow) }); });
   body.replaceChildren(
     h("header", { class: "vs-head" }, days.map((d) => dayHead(d.key, d.date, d.info, d.s, d.err))),
-    picker(st, dates, pairs, ctx),
+    picker(st, dates, pairs, ctx, container.clientWidth <= 600),
     options(st, ctx, reset),
     skewSection(st, days, pair, skew),
     h("div", { class: `vs-days ${shown.length > 1 ? "both" : "one"}` }, dayBlocks),

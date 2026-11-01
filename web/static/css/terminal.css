@@ -108,6 +108,13 @@ select, input[type="date"], input[type="email"], input[type="password"], input[t
   font-size: 0.85rem; color: var(--muted);
 }
 .footer strong { color: var(--ink); font-weight: 600; }
+.footer-notes { display: contents; }
+@media (max-width: 720px) {
+  .is-preview .footer { flex-wrap: nowrap; gap: 0.75rem; padding: 0.15rem 0.75rem; font-size: 0.75rem; white-space: nowrap; }
+  .is-preview .footer .status { min-height: 0; }
+}
+.sample-tag { font-family: var(--mono); font-size: 0.72rem; line-height: 1.5; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;
+  color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; padding: 0 0.4rem; }
 
 dialog { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); max-width: 30rem; padding: 1.25rem; }
 dialog::backdrop { background: rgba(30, 27, 22, 0.35); }
@@ -128,7 +135,7 @@ table.keys td { padding: 0.2rem 0.5rem; border-bottom: 1px solid var(--rule); }
   .workspace, .workspace.with-tutor { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .nav { border-right: 0; border-bottom: 1px solid var(--rule); padding: 0; overflow-x: auto; }
   .nav ol { display: flex; }
-  .nav a { border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; padding: 0.4rem 0.75rem; }
+  .nav a { border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; padding: 0.4rem 0.45rem; }
   .nav a[aria-current="page"] { border-bottom-color: var(--accent); }
   .nav kbd { display: none; }
   .nav .controls { display: flex; border-top: 0; margin: 0; padding: 0.4rem 0.75rem; }
@@ -150,6 +157,7 @@ table.data caption { text-align: left; color: var(--muted); font-size: 0.9rem; p
 table.data th, table.data td { padding: 0.25rem 0.6rem; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
 table.data thead th { font-weight: 600; border-bottom: 1px solid var(--muted); white-space: nowrap; }
 table.data tbody th { font-weight: 400; }
+.next-event table.data thead th, table.summary thead th { white-space: normal; vertical-align: bottom; }
 table.data .r { text-align: right; }
 table.data .num, table.data td.r { font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; }
 table.events tbody tr:hover { background: var(--paper-2); }
@@ -223,8 +231,11 @@ table.options tbody { font-family: var(--mono); }
 .date-pick { min-width: 0; max-width: 100%; }
 .date-pick select, .vs-picker select { min-width: 0; flex: 1 1 auto; max-width: 100%; }
 @container pane (max-width: 560px) {
-  .vs-picker .controls-row > label { width: 100%; }
-  .vs-picker .controls-row > label > .date-pick { flex: 1 1 auto; }
+  /* "Date 1" and its ‹ › on one line, with the list at full width under them. */
+  .vs-picker .controls-row > label { display: grid; grid-template-columns: 1fr auto auto; width: 100%; gap: 0.2rem 0.25rem; white-space: nowrap; }
+  .vs-picker .controls-row > label > .date-pick { display: contents; }
+  .date-pick select { grid-row: 2; grid-column: 1 / -1; }
+  .vs-picker select { font-size: 0.8rem; width: 100%; }
 }
 
 .stale-banner { margin: 0; padding: 0.4rem 1rem; background: #f7e9e4; color: var(--danger); border-bottom: 1px solid var(--danger); font-size: 0.95rem; }
@@ -254,6 +265,7 @@ table.index td.flagcell { color: var(--danger); white-space: nowrap; }
 .tutor-msg .who { font-family: var(--mono); font-size: 0.75rem; font-weight: 400; color: var(--muted); margin-bottom: 0.15rem; }
 .tutor-msg .source { margin: 0; }
 .tutor-form textarea { width: 100%; resize: vertical; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 0.3rem 0.45rem; font: inherit; }
+.tutor-form button:disabled, .tutor-form textarea:disabled { opacity: 0.55; cursor: not-allowed; }
 .tutor-sees summary { font-size: 0.9rem; }
 
 /* Tutor panel: resize handle on its left edge, and the saved-sessions list at its top. */
@@ -290,7 +302,7 @@ body.resizing .plot { pointer-events: none; }
 .provisional { font-style: italic; }
 
 /* Entries: the panel, menu or dialog that opens. Hovers are set on each control above. */
-.tutor, .account-menu, dialog[open] { animation: enter var(--enter); }
+.tutor, .account-menu, dialog[open], .pane.swap { animation: enter var(--enter); }
 @keyframes enter { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }

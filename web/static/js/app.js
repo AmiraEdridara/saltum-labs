@@ -1,5 +1,5 @@
 // The terminal frame (docs/prd.md, Page 5): top bar, navigation, one or two panes, tutor panel, footer.
-import { get, send } from "./api.js";
+import { PREVIEW, get, send } from "./api.js";
 import { cached } from "./lib.js";
 import { initTutor } from "./tutor.js";
 import { renderPage } from "./pages.js";
@@ -12,8 +12,10 @@ const KEYS = [
   ["[", "Previous date (Vol surface)"], ["]", "Next date (Vol surface)"], ["?", "Show these shortcuts"],
 ];
 
+const BASE = PREVIEW ? "/preview" : "/terminal";    // the homepage's preview is this same page, on sample data
 let state;
 let me;
+const shownPage = {};
 const dates = { loaded: false, list: [], byDate: new Map(), first: "", last: "" };
 
 function status(text) { $("status").textContent = text; }
@@ -21,8 +23,8 @@ function status(text) { $("status").textContent = text; }
 function go(next, { push = true, panes = true } = {}) {
   const layoutChanged = !state || next.split !== state.split || next.tutor !== state.tutor;
   state = next;
-  const url = "/terminal" + serialize(state);
-  if (push) history.pushState(null, "", url); else history.replaceState(null, "", url);
+  const url = BASE + serialize(state);
+  if (push && !PREVIEW) history.pushState(null, "", url); else history.replaceState(null, "", url);
   render({ panes });
   if (layoutChanged && me) send("PUT", "/account/layout", { split: state.split, tutor: state.tutor }).catch(() => {});
 }
@@ -46,7 +48,7 @@ function render({ panes = true } = {}) {
   list.replaceChildren();
   for (const p of PAGES) {
     const a = document.createElement("a");
-    a.href = "/terminal" + serialize(withPage(state, state.active, p.id));
+    a.href = BASE + serialize(withPage(state, state.active, p.id));
     a.textContent = p.title;
     const kbd = document.createElement("kbd");
     kbd.textContent = p.key;
@@ -69,7 +71,7 @@ function render({ panes = true } = {}) {
   $("toggle-tutor").setAttribute("aria-pressed", String(state.tutor));
 
   const ctx = { dates, split: state.split, keysTable, setParams: (pane, v) => go(withParams(state, pane, v)),
-                surfaceHref: (d1, d2) => "/terminal" + serialize(surfaceState(d1, d2)),
+                surfaceHref: (d1, d2) => BASE + serialize(surfaceState(d1, d2)),
                 openSurface: (d1, d2) => go(surfaceState(d1, d2)) };
   for (const p of PANES) {
     const node = $(`pane-${p}`);
@@ -77,6 +79,10 @@ function render({ panes = true } = {}) {
     node.classList.toggle("hidden", !visible);
     node.classList.toggle("active", state.active === p);
     if (visible && panes) renderPage(node, p, state.panes[p], ctx);
+    if (visible && panes && shownPage[p] !== state.panes[p].page) {     // a page swap, not a filter change
+      if (shownPage[p]) { node.classList.remove("swap"); void node.offsetWidth; node.classList.add("swap"); }
+      shownPage[p] = state.panes[p].page;
+    }
   }
 
   // The tutor sees the active pane.
@@ -270,8 +276,20 @@ function latestEventPair(list) {
   return { d1: list[list.length - 2].date, d2: list[list.length - 1].date };
 }
 
+function fillFooter(lines) {
+  $("footer-notes").replaceChildren(...lines.map((text) => Object.assign(document.createElement("span"), { textContent: text })));
+}
+
 async function start() {
+  if (PREVIEW) {
+    document.querySelector(".brand").target = "_top";
+    document.querySelector(".account").classList.add("hidden");
+    document.querySelector(".v1-note").classList.add("hidden");
+    document.body.classList.add("is-preview");
+    $("sample-tag").classList.remove("hidden");
+  }
   me = await get("/account/me");
+  fillFooter(me.footer);
   $("account-button").textContent = me.email;
   $("acct-email").textContent = me.email;
   $("acct-plan").textContent = me.plan === "tutor_plus" ? "Tutor plus" : "Student (free)";
@@ -281,7 +299,7 @@ async function start() {
     : `${used} of ${me.limits.student_daily}`;
   $("acct-provider").textContent = me.provider === "dev" ? "local dev login" : me.provider;
 
-  state = parse(location.search, me.layout);
+  state = parse(PREVIEW ? "" : location.search, me.layout);    // a reload hands the frame its last URL; the preview starts fresh
   wire();
   applyTutorWidth(Number.isInteger(me.layout.tutor_width) ? me.layout.tutor_width : TUTOR_DEFAULT);
   // The tutor sees the active pane: its page and the URL parameters (dates and filters).
@@ -294,8 +312,10 @@ async function start() {
     for (const x of d.data.dates) dates.byDate.set(x.date, x);
     dates.first = dates.list[0];
     dates.last = dates.list[dates.list.length - 1];
+    dates.v1End = d.v1_end;
     dates.loaded = true;
     $("latest-close").textContent = dates.last;
+    $("v1-end").textContent = d.v1_end;
     checkUpdate(dates.last);
     // Vol surface panes without dates start on the latest event pair: the day before and the event day.
     dates.latestPair = latestEventPair(d.data.dates);

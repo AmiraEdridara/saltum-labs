@@ -1,4 +1,6 @@
 // Calls go to this server's /api proxy, which adds the API token server-side. The browser never holds it.
+// On the homepage's preview (/preview) nothing leaves the browser: reads come from a fixed sample file (preview.js).
+export const PREVIEW = location.pathname === "/preview";
 
 export class ApiError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -16,6 +18,7 @@ function checkCode(r) {
 }
 
 export async function get(path) {
+  if (PREVIEW) return (await import("./preview.js")).sampleGet(path);
   const r = await fetch(path, { headers: { Accept: "application/json" }, credentials: "same-origin" });
   checkCode(r);
   if (r.status === 401) {                       // session expired: back to the login page, then here again
@@ -28,6 +31,7 @@ export async function get(path) {
 }
 
 export async function send(method, path, body) {
+  if (PREVIEW) return body || {};               // look-only: nothing is saved
   const r = await fetch(path, { method, headers: { "Content-Type": "application/json" }, credentials: "same-origin",
                                 body: JSON.stringify(body || {}) });
   const data = await r.json().catch(() => ({}));

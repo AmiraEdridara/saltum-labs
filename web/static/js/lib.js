@@ -1,5 +1,5 @@
 // Shared by the pages: element builder, cached API reads, number formatting, and loading Plotly once.
-import { get } from "./api.js";
+import { PREVIEW, get } from "./api.js";
 
 export function h(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
@@ -18,6 +18,9 @@ export function cached(path) {
   if (!cache.has(path)) cache.set(path, get(path).catch((e) => { cache.delete(path); throw e; }));
   return cache.get(path);
 }
+
+// The preview's plain wording, where the terminal's own would make invented numbers look like real results.
+export const plain = (real, sample) => (PREVIEW ? sample : real);
 
 export const num = (v, dp = 3, sign = false) => (v === null || v === undefined || Number.isNaN(v) ? "–"
   : (sign && v > 0 ? "+" : "") + Number(v).toFixed(dp));

@@ -45,8 +45,10 @@ async def headers(request: Request, call_next):
             return JSONResponse({"error": "send JSON"}, status_code=415)
     response = await call_next(request)
     # style-src allows inline styles only because Plotly sets them (approved 2026-10-15); scripts stay 'self' only.
+    # Only the terminal preview may sit in a frame, and only on this site's own homepage.
+    ancestors = "'self'" if request.url.path == "/preview" else "'none'"
     response.headers["Content-Security-Policy"] = ("default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-                                                   "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+                                                   f"frame-ancestors {ancestors}; base-uri 'none'; form-action 'self'")
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"
     stale = [s for s in response.headers.get(codecheck.HEADER, "").split(",") if s]
@@ -116,6 +118,13 @@ def terminal_page(request: Request):
     return FileResponse(settings.STATIC_DIR / "terminal.html", headers={"Cache-Control": "no-store"})
 
 
+@app.get("/preview")
+def preview_page():
+    """The homepage's terminal preview, for everyone: the real terminal page, which on this path reads only the fixed
+    sample file (web/static/js/preview.js) and never the API."""
+    return FileResponse(settings.STATIC_DIR / "terminal.html", headers={"Cache-Control": "no-store"})
+
+
 # ---------------------------------------------------------------- auth and account
 @app.post("/auth/signup", status_code=201)
 async def sign_up(request: Request):
@@ -149,6 +158,7 @@ async def reset(request: Request):
 def me(request: Request):
     user = require(request)
     return dict(public(user), layout=request.app.state.store.layout(user["id"]), provider=request.app.state.provider.name,
+                footer=settings.TERMINAL_FOOTER,
                 limits=dict(student_daily=settings.TUTOR_DAILY_FREE, tutor_plus_monthly=settings.TUTOR_MONTHLY_PLUS,
                             enforced=False))
 

@@ -1,6 +1,6 @@
 // Page 1: the event study (docs/prd.md). Every number comes from the API, shown with n and its source.
 // Nothing is calculated here except formatting and sorting. "Held or not" is quoted from findings_v1.md.
-import { cached, chartFailed, h, loadPlotly, num, renderTicket, source, table } from "../lib.js";
+import { cached, chartFailed, h, loadPlotly, num, plain, renderTicket, source, table } from "../lib.js";
 
 const TYPE_NAME = { CPI: "CPI", NFP: "Payrolls (NFP)", FOMC: "FOMC" };
 const PERIOD_NAME = { both: "both periods", "2020-01..2023-05": "2020-01 to 2023-05", "2023-06..now": "2023-06 to now" };
@@ -85,10 +85,11 @@ function headline(ev) {
     table(["", ...sums.map((s) => TYPE_NAME[s.event_type])], rows.map(([label, f]) => [label, ...sums.map(f)]),
           { caption: `${PERIOD_NAME[ev.period]}; one column per event type, no pooled summary` }),
     h("p", { class: ev.data.summaries_data === "live" ? "data-label live" : "data-label" },
-      ev.data.summaries_data === "live"
+      plain(ev.data.summaries_data === "live"
         ? `Includes live data after ${ev.v1_end} (${ev.data.live_rows} events): not in findings_v1. Premium medians use final premiums only.`
         : `Frozen results: findings v1, data to ${ev.v1_end}.`
-          + (ev.data.live_rows ? ` ${ev.data.live_rows} newer events are in the table below, marked live.` : "")),
+          + (ev.data.live_rows ? ` ${ev.data.live_rows} newer events are in the table below, marked live.` : ""),
+        "Sample data: invented numbers, not results.")),
     source(...ev.source.filter((x) => x !== "date_list")), h("p", { class: "muted small" }, ev.caveat));
 }
 
@@ -194,11 +195,12 @@ function caveats(ev, findings) {
     h("h2", { id: "caveats-title" }, "Caveats"),
     h("p", {}, "Sample size in this selection (", PERIOD_NAME[ev.period], "): ",
       ev.data.summaries.map((s) => `${TYPE_NAME[s.event_type]} n ${s.n}`).join(", "), "."),
-    h("p", {}, "Did the premium hold in both periods? In the words of the frozen findings:"),
+    h("p", {}, plain("Did the premium hold in both periods? In the words of the frozen findings:",
+                     "Did the premium hold in both periods? The real terminal quotes its findings here. Sample text:")),
     ids.map((id) => {
       const f = findingText(findings, id);
       return f ? h("blockquote", {}, h("p", {}, h("strong", {}, f.title)), f.bullets.map((b) => h("p", {}, b)),
-                   h("footer", {}, h("code", {}, "findings_v1.md"), `, Section 1, Finding ${id}`)) : null;
+                   h("footer", {}, plain([h("code", {}, "findings_v1.md"), `, Section 1, Finding ${id}`], "Sample text, not a finding"))) : null;
     }),
     h("p", {}, ev.caveat));
 }
@@ -206,7 +208,7 @@ function caveats(ev, findings) {
 function definitions() {
   return h("section", { "aria-labelledby": "defs-title" }, h("h2", { id: "defs-title" }, "Definitions"),
     h("dl", { class: "defs" }, DEFINITIONS.map(([t, d]) => [h("dt", {}, t), h("dd", {}, d)])),
-    h("p", { class: "muted small" }, "From docs/prd.md; served by GET /definitions from the tutor stage."));
+    plain(h("p", { class: "muted small" }, "From docs/prd.md; served by GET /definitions from the tutor stage."), null));
 }
 
 // ------------------------------------------------------------ the page

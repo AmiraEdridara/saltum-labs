@@ -59,65 +59,16 @@
     <p class="stats-note">CPI, FOMC and payrolls days, SPX and SPXW options, frozen v1.</p>
   </section>
 
-  <!-- 3. Terminal tour -->
+  <!-- 3. Terminal preview: the real terminal page in a frame, on a fixed sample file (web/static/js/preview.js) -->
   <section id="tour" class="tour" aria-labelledby="tour-title">
     <p class="kicker">The terminal</p>
-    <h2 id="tour-title">A tour of the five pages</h2>
-    <div class="tabs" role="tablist" aria-label="Terminal pages">
-      <button role="tab" id="tab-study" aria-controls="panel-study" aria-selected="true" tabindex="0">Event study</button>
-      <button role="tab" id="tab-surface" aria-controls="panel-surface" aria-selected="false" tabindex="-1">Vol surface</button>
-      <button role="tab" id="tab-index" aria-controls="panel-index" aria-selected="false" tabindex="-1">Event index</button>
-      <button role="tab" id="tab-tutor" aria-controls="panel-tutor" aria-selected="false" tabindex="-1">Tutor</button>
-      <button role="tab" id="tab-backtest" aria-controls="panel-backtest" aria-selected="false" tabindex="-1">Backtest <span class="soon">coming next</span></button>
-    </div>
-
-    <div class="panel" role="tabpanel" id="panel-study" aria-labelledby="tab-study" tabindex="0">
-      <figure class="preview" id="preview-study" aria-describedby="study-cap"></figure>
-      <div class="panel-text">
-        <p>What move the options priced in the evening before a release, against the move that happened.</p>
-        <p>It teaches reading an implied move: the at-the-money straddle as a share of the forward.</p>
-        <p id="study-cap" class="caption">Median implied and actual one-day move, both periods, by event type.</p>
-        <a class="open" href="/terminal?a=event-study&amp;split=0">Open the event study</a>
-      </div>
-    </div>
-
-    <div class="panel hidden" role="tabpanel" id="panel-surface" aria-labelledby="tab-surface" tabindex="0">
-      <figure class="preview split" id="preview-surface" aria-describedby="surface-cap"></figure>
-      <div class="panel-text">
-        <p>Two days side by side, as in the terminal's split view: the day before a CPI release and the release day.</p>
-        <p>It teaches the term structure: at-the-money implied vol by expiry, and how it moves when an event passes.</p>
-        <p id="surface-cap" class="caption"></p>
-        <a class="open" id="open-surface" href="/terminal?a=vol-surface">Open the vol surface</a>
-      </div>
-    </div>
-
-    <div class="panel hidden" role="tabpanel" id="panel-index" aria-labelledby="tab-index" tabindex="0">
-      <div class="preview" id="preview-index"></div>
-      <div class="panel-text">
-        <p>Every event in one table, with its implied and actual move and how 30-day vol changed.</p>
-        <p>It teaches comparing events with ordinary days, and why flagged days are shown apart.</p>
-        <p class="caption">The five latest v1 events.</p>
-        <a class="open" href="/terminal?a=event-index&amp;split=0">Open the event index</a>
-      </div>
-    </div>
-
-    <div class="panel hidden" role="tabpanel" id="panel-tutor" aria-labelledby="tab-tutor" tabindex="0">
-      <div class="preview" id="preview-tutor"></div>
-      <div class="panel-text">
-        <p>A tutor beside every page that answers from the site's tables only, and says when a result is weak.</p>
-        <p>It teaches checking a claim against the data. It refuses trade advice. The demo below shows it.</p>
-        <p class="caption">A real tool result, as the tutor receives it.</p>
-        <a class="open" href="/terminal?tutor=1">Open the terminal with the tutor</a>
-      </div>
-    </div>
-
-    <div class="panel hidden" role="tabpanel" id="panel-backtest" aria-labelledby="tab-backtest" tabindex="0">
-      <div class="preview empty"><p>Coming next. There is nothing to preview yet.</p></div>
-      <div class="panel-text">
-        <p>Backtests come after version 1, with costs and the same honest labels.</p>
-        <p>They will teach why a pattern in the past is not a trade.</p>
-      </div>
-    </div>
+    <h2 id="tour-title">Try the terminal here</h2>
+    <p class="note">The real pages, on invented sample numbers. Click through them: nothing is saved and no tutor is called.</p>
+    <figure class="window">
+      <div class="window-bar" aria-hidden="true"><span class="window-dots"><i></i><i></i><i></i></span><span class="window-title">Saltum Labs terminal · preview</span></div>
+      <iframe src="/preview" title="A preview of the terminal, on sample data" loading="lazy"></iframe>
+    </figure>
+    <p class="actions"><a class="button primary" href="/terminal">Open the real terminal</a></p>
   </section>
 
   <!-- 4. Tutor demo -->
@@ -263,8 +214,6 @@
 <!-- 10. Footer -->
 <footer id="footer" class="footer">
   <p><strong>Educational use only. Not financial advice.</strong> Past results describe one sample of market history.</p>
-  <p>S&amp;P 500 closes, Treasury bill
-    yields and VIX: FRED, Federal Reserve Bank of St. Louis.</p>
   <p>Local version, running on this computer only · v1 data to <span class="num" data-src="v1_end" data-fmt="text">…</span></p>
 </footer>
 </body>

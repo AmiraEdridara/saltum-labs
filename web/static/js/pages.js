@@ -3,11 +3,12 @@
 import { render as renderEventStudy } from "./pages/event_study.js";
 import { render as renderVolSurface } from "./pages/vol_surface.js";
 import { render as renderEventIndex } from "./pages/event_index.js";
+import { PREVIEW } from "./api.js";
 import { PAGES, page } from "./state.js";
 
 const LABELS = { type: "Event type", period: "Period", exclude_flagged: "Exclude flagged days",
                  include_ordinary: "Show ordinary pairs", d1: "Date 1", d2: "Date 2",
-                 live: "Include live data (after 2026-10-09) in the medians" };
+                 live: "Include live data (after {v1}) in the medians" };
 const OPTION_TEXT = { all: "All (side by side)", NFP: "Payrolls (NFP)", both: "Both periods",
                       "2020-01..2023-05": "2020-01 to 2023-05", "2023-06..now": "2023-06 to now",
                       true: "Yes", false: "No" };
@@ -35,7 +36,7 @@ function control(name, allowed, value, onChange, ctx) {
     if (v === value) o.selected = true;
     select.append(o);
   }
-  return el("label", {}, LABELS[name], select);
+  return el("label", {}, LABELS[name].replace("{v1}", ctx.dates.v1End || "…"), select);
 }
 
 function dayNote(date, ctx) {
@@ -64,7 +65,7 @@ export function renderPage(container, paneId, paneState, ctx) {
     renderVolSurface(container, paneId, paneState.params, ctx);
     return;
   }
-  const names = Object.keys(p.params);
+  const names = Object.keys(p.params).filter((n) => !(PREVIEW && n === "live"));    // the sample has no live rows
   if (names.length) {
     const row = el("div", { class: "controls-row" });
     for (const n of names) row.append(control(n, p.params[n], paneState.params[n], (v) => ctx.setParams(paneId, v), ctx));

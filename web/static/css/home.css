@@ -39,7 +39,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 400; line-height: 1.06; mar
 h2 { font-size: clamp(34px, 4.2vw, 56px); letter-spacing: -0.015em; }
 h3 { font-size: 24px; line-height: 1.2; letter-spacing: -0.01em; }
 p { margin: 0 0 0.8rem; }
-.kicker, .masthead-line, .stats dt, .soon, .who, .label-live, .label-prov, .card-label {
+.kicker, .masthead-line, .stats dt, .who, .label-live, .label-prov, .card-label {
   font-family: var(--mono); font-weight: 400; font-size: 12px; line-height: 16px; letter-spacing: 0.06em; text-transform: uppercase;
 }
 .kicker { color: var(--ink-soft); margin-bottom: 20px; }
@@ -91,51 +91,23 @@ main > section > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
 .stats .unit { display: block; font-family: var(--sans); font-size: 0.95rem; color: var(--ink-soft); }
 .stats-note { text-align: center; margin: 12px auto 0; }
 
-/* ---------------------------------------------------------------- tour */
-.tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--rule); margin-top: 24px; }
-.tabs [role="tab"] {
-  font: 500 14px/20px var(--sans); color: var(--ink-soft); background: transparent; border: 1px solid transparent;
-  border-bottom: 0; border-radius: 6px 6px 0 0; padding: 10px 16px; cursor: pointer; margin-bottom: -1px;
-  transition: color var(--hover), background-color var(--hover);
+/* ---------------------------------------------------------------- terminal preview */
+.tour .actions { margin-top: 24px; }
+.tour .window { max-width: 1320px; }
+.window {
+  margin-top: 24px; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--paper);
+  box-shadow: 0 2px 6px rgba(30, 27, 22, 0.08), 0 24px 56px -16px rgba(30, 27, 22, 0.28);
 }
-.tabs [role="tab"]:hover { color: var(--ink); }
-.tabs [role="tab"][aria-selected="true"] { color: var(--ink); background: var(--card); border-color: var(--rule); box-shadow: inset 0 2px 0 var(--accent); }
-.soon { font-size: 10px; color: var(--accent); }
-.panel {
-  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 32px; padding: 28px 24px;
-  border: 1px solid var(--rule); border-top: 0; border-radius: 0 0 6px 6px; background: var(--card);
-  animation: enter var(--enter);
-}
-@keyframes enter { from { opacity: 0; transform: translateY(6px); } }
-.panel-text p { max-width: var(--measure); }
-.open { font-weight: 600; }
-.preview { margin: 0; min-width: 0; }
-.preview svg { width: 100%; height: auto; display: block; font-family: var(--sans); }
-.preview.empty { display: grid; place-items: center; border: 1px dashed var(--rule); border-radius: 6px; min-height: 160px; color: var(--ink-soft); }
-.preview.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.mini figcaption { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 4px; }
-.panel-title { font-weight: 600; color: var(--ink); }
-.bar-implied { fill: var(--ink); }
-.bar-actual { fill: var(--accent-mid); }
-svg .legend, svg .value, svg .row-label, svg .n { font-size: 15px; fill: var(--ink); }
-svg .row-label { font-weight: 600; }
-svg .n { font-weight: 400; fill: var(--ink-soft); }
-svg .tick { font-size: 10px; fill: var(--ink-soft); }
-svg .grid { stroke: var(--rule); stroke-width: 1; }
-.line-main { fill: none; stroke: var(--ink); stroke-width: 2; }
-.line-other { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 4 3; }
-.mini-table, .figures { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-.mini-table th, .mini-table td, .figures th, .figures td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
-.mini-table th, .figures thead th { font-weight: 500; border-bottom: 1px solid var(--ink-soft); }
-.mini-table { display: block; overflow-x: auto; }
-.mini-table td { white-space: nowrap; }
-.tool-card { border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: 6px; padding: 14px 16px; background: var(--paper); }
-.tool-call { font-family: var(--mono); font-size: 0.9rem; }
-.tool-card dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0 0 8px; }
-.tool-card dl > div { display: contents; }
-.tool-card dt { color: var(--ink-soft); }
-.tool-card dd { margin: 0; }
-.tool-source { font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
+.window-bar { position: relative; display: flex; align-items: center; justify-content: center; min-height: 32px; padding: 0 12px;
+              background: var(--paper-2); border-bottom: 1px solid var(--rule); }
+.window-dots { position: absolute; left: 12px; display: flex; gap: 6px; }
+.window-dots i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--ink-soft); opacity: 0.45; }
+.window-title { font-family: var(--mono); font-size: 12px; line-height: 16px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.window iframe { display: block; width: 100%; height: 720px; border: 0; background: var(--paper); }
+
+.figures { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.figures th, .figures td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.figures thead th { font-weight: 500; border-bottom: 1px solid var(--ink-soft); }
 
 /* ---------------------------------------------------------------- demo */
 .demo-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 1rem auto; }
@@ -191,16 +163,16 @@ svg .grid { stroke: var(--rule); stroke-width: 1; }
   .stats dl { grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
   .stats dl > div { padding: 6px 8px; }
   .stats dl > div:nth-child(3) { border-left: 0; }
-  .panel { grid-template-columns: minmax(0, 1fr); padding: 18px 14px; gap: 18px; }
-  .preview.split { grid-template-columns: minmax(0, 1fr); }
-  .tabs [role="tab"] { padding: 8px 10px; font-size: 0.92rem; }
+  .window { margin-left: -10px; margin-right: -10px; }
+  .window iframe { height: calc(75vh - 33px); height: calc(75svh - 33px); }
+  .window-dots { display: none; }
   .columns, .claims, .next-list, .cards, .plans { grid-template-columns: minmax(0, 1fr); }
   .step { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .who { padding-top: 0; }
-  .figures, .mini-table { font-size: 0.78rem; }
+  .figures { font-size: 0.78rem; }
   .figures { display: table; table-layout: fixed; }
   .figures td, .figures th { white-space: normal; overflow-wrap: anywhere; }
-  .figures th, .figures td, .mini-table th, .mini-table td { padding: 5px 5px; }
+  .figures th, .figures td { padding: 5px 5px; }
   .card { padding: 16px 12px; }
 }
 

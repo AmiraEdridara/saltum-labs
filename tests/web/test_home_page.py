@@ -1,6 +1,6 @@
 """Page 6, the homepage: GET / for everyone, GET /home/data public with fixed v1 summaries only, every number on the
-page traced to the API or data/findings_v1.md, the ten sections, phone width, keyboard tabs, reduced motion, and a
-tutor demo that makes no requests."""
+page traced to the API or data/findings_v1.md, the ten sections, phone width, reduced motion, and a tutor demo that
+makes no requests. The terminal preview in section 3 is tested in test_preview.py."""
 import json
 import re
 
@@ -21,7 +21,7 @@ def signed(x, d):
 
 
 FMT = {"text": str, "int": lambda x: f"{int(x):,}", "pp3": lambda x: signed(x, 3), "vp3": lambda x: signed(x, 3),
-       "pct3": lambda x: f"{x:.3f}", "iv1": lambda x: f"{x:.1f}", "range2": lambda x: f"{x:.2f}"}
+       "pct3": lambda x: f"{x:.3f}", "range2": lambda x: f"{x:.2f}"}
 
 
 def pick(data, path):
@@ -202,8 +202,6 @@ EXTRACT = r"""(() => {
                    pressed: document.querySelector('.demo-pick[aria-pressed="true"]')?.dataset.demo },
            requests_after: window.__mark == null ? null : performance.getEntriesByType('resource').filter((e) => e.startTime > window.__mark).map((e) => e.name),
            requests_all: performance.getEntriesByType('resource').map((e) => e.name),
-           tabs: [...document.querySelectorAll('[role=tab]')].map((t) => ({ id: t.id, selected: t.getAttribute('aria-selected'), tabindex: t.tabIndex,
-                   panel_visible: !document.getElementById(t.getAttribute('aria-controls')).classList.contains('hidden') })),
            signed_in_visible: [...document.querySelectorAll('[data-signed-in]')].some(vis),
            signed_out_visible: [...document.querySelectorAll('[data-signed-out]')].some(vis),
            links: Object.fromEntries([...document.querySelectorAll('a.open, .actions a, .plan a')].filter(vis).map((a) => [txt(a), a.getAttribute('href')])) };
@@ -224,10 +222,6 @@ def pages(browser):
                                  "document.querySelector('.demo-pick[data-demo=\"1\"]').click()"],
                         extract=EXTRACT, timeout_s=60),
         "phone": dict(url="/", logged_out=True, width=390, height=844, mobile=True, media=REDUCED, wait=READY, extract=EXTRACT),
-        "keyboard": dict(url="/", logged_out=True, wait=READY + " && (document.getElementById('tab-study').focus(), true)",
-                         keys=["ArrowRight", "ArrowRight"], extract=EXTRACT),
-        "keyboard_end": dict(url="/", logged_out=True, wait=READY + " && (document.getElementById('tab-study').focus(), true)",
-                             keys=["End"], extract=EXTRACT),
         "signed_in": dict(url="/", wait=READY, media=REDUCED, extract=EXTRACT),
     }
     out = browser.visit(list(visits.values()))
@@ -251,7 +245,7 @@ def test_the_ten_sections_render_in_order(pages):
 def test_every_number_matches_the_api_or_findings(pages):
     for k in ("desktop", "phone", "signed_in"):
         v = pages[k]["value"]
-        assert len(v["nums"]) > 80
+        assert len(v["nums"]) > 75
         for n in v["nums"]:
             assert n["text"] == FMT[n["fmt"]](pick(v["data"], n["src"])), (k, n)
         sizes = [abs(s["diff"]) for s in v["data"]["findings"]["survivors"]]
@@ -265,9 +259,11 @@ def test_every_number_matches_the_api_or_findings(pages):
 def test_the_demo_plays_without_any_request(pages):
     v = pages["desktop"]["value"]
     assert v["demo"]["done"] == "true" and v["demo"]["pressed"] == "1" and v["demo"]["steps"] == 5
-    assert v["requests_after"] == [], v["requests_after"]              # replay and switching: no requests at all
-    calls = [u for u in v["requests_all"] if "/static/" not in u]
+    # Replay and switching: no requests at all. The terminal preview's frame loads when it scrolls into view.
+    assert [u for u in v["requests_after"] if not u.endswith(("/preview", "/favicon.svg"))] == [], v["requests_after"]
+    calls = [u for u in v["requests_all"] if "/static/" not in u and not u.endswith("/preview")]
     assert [u.split("127.0.0.1:")[1].split("/", 1)[1] for u in calls] == ["home/data"]
+    assert sum(u.endswith("/preview") for u in v["requests_all"]) <= 1
     assert "+0.018 pp" in v["demo"]["text"] and "Finding 1.3" in v["demo"]["text"]
 
 
@@ -281,18 +277,9 @@ def test_phone_width(pages):
     assert not v["scrollX"] and v["cut"] == [], v["cut"]
 
 
-def test_tabs_work_from_the_keyboard(pages):
-    def selected(k):
-        return [t["id"] for t in pages[k]["value"]["tabs"] if t["selected"] == "true"]
-    assert selected("desktop") == ["tab-study"]
-    assert selected("keyboard") == ["tab-index"] and selected("keyboard_end") == ["tab-backtest"]
-    for t in pages["keyboard"]["value"]["tabs"]:
-        assert t["panel_visible"] == (t["selected"] == "true") and t["tabindex"] == (0 if t["selected"] == "true" else -1)
-
-
 def test_links_and_signed_in_state(pages):
     out, signed_in = pages["desktop"]["value"], pages["signed_in"]["value"]
     assert out["links"]["Create a free account"] == "/login?mode=signup" and out["links"]["Open the terminal"] == "/terminal"
-    assert out["links"]["Sign up"] == "/login?mode=signup" and out["links"]["Open the event study"].startswith("/terminal?a=event-study")
+    assert out["links"]["Sign up"] == "/login?mode=signup" and out["links"]["Open the real terminal"] == "/terminal"
     assert out["signed_out_visible"] and not out["signed_in_visible"]
     assert signed_in["signed_in_visible"] and not signed_in["signed_out_visible"]
