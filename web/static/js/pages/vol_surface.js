@@ -2,6 +2,7 @@
 // Two dates; by default the day before an event and the event day. Every number comes from the API; the
 // browser only formats, picks which expiries to draw, and takes the difference of two days' metrics for a
 // pair that has no stored change.
+import { PREVIEW } from "../api.js";
 import { cached, chartFailed, h, loadPlotly, num, plain, renderTicket, source, table, word } from "../lib.js";
 
 const NAMES = { CPI: "CPI", NFP: "payrolls", FOMC: "FOMC decision" };       // config.VOL_PAGE_EVENT_NAMES
@@ -311,18 +312,18 @@ function picker(st, dates, pairs, ctx, compact) {
     return `${lab ? "◆ " : ""}${fmtDate(d.date)}${lab ? " · " + brief(lab) : ""}${d.flagged ? flag : ""}`;
   };
   const dateSelect = (key) => {
-    const sel = h("select", { "aria-label": key === "d1" ? "Date 1" : "Date 2", "data-picker": key,
+    const sel = h("select", { "aria-label": key === "d1" ? "Date 1" : "Date 2", "data-picker": key, disabled: PREVIEW,
                               onchange: (e) => ctx.setParams(st.pane, { [key]: e.target.value }) },
       [...byYear].reverse().map(([y, ds]) => h("optgroup", { label: y },
         [...ds].reverse().map((d) => h("option", { value: d.date, selected: d.date === st.params[key] }, optText(d))))));
     const i = list.findIndex((d) => d.date === st.params[key]);
     const step = (k) => () => { const n = list[i + k]; if (n) ctx.setParams(st.pane, { [key]: n.date }); };
-    return h("span", { class: "date-pick" }, h("button", { type: "button", "aria-label": "Earlier date", onclick: step(-1), disabled: i <= 0 }, "‹"),
-             sel, h("button", { type: "button", "aria-label": "Later date", onclick: step(1), disabled: i < 0 || i >= list.length - 1 }, "›"));
+    return h("span", { class: "date-pick" }, h("button", { type: "button", "aria-label": "Earlier date", onclick: step(-1), disabled: PREVIEW || i <= 0 }, "‹"),
+             sel, h("button", { type: "button", "aria-label": "Later date", onclick: step(1), disabled: PREVIEW || i < 0 || i >= list.length - 1 }, "›"));
   };
   const cur = `${st.params.d1}|${st.params.d2}`;
   const pairText = (r) => `${r.event_type}${compact ? "" : ": day before / day of"} · ${shortDate(r.day_before)} – ${fmtDate(r.event_date)}${r.flagged ? flag : ""}`;
-  const pairSel = h("select", { "aria-label": "Jump to a pair", "data-picker": "pair",
+  const pairSel = h("select", { "aria-label": "Jump to a pair", "data-picker": "pair", disabled: PREVIEW,
                                 onchange: (e) => { const [d1, d2] = e.target.value.split("|"); if (d2) ctx.setParams(st.pane, { d1, d2 }); } },
     h("option", { value: "" }, "Jump to a pair…"),
     h("optgroup", { label: `Event pairs (${pairs.ev.length})` },
@@ -339,7 +340,8 @@ function picker(st, dates, pairs, ctx, compact) {
     h("div", { class: "controls-row" }, pairSel,
       h("button", { type: "button", onclick: prevPair ? go(prevPair) : null, disabled: !prevPair, "data-action": "prev-pair" }, "‹ Previous event pair"),
       h("button", { type: "button", onclick: nextPair ? go(nextPair) : null, disabled: !nextPair, "data-action": "next-pair" }, "Next event pair ›")),
-    h("p", { class: "muted small" }, `◆ marks event days and the days before them. Event pairs and the ${plain("100 ", "")}ordinary control pairs are in the jump list.`));
+    h("p", { class: "muted small" }, plain("◆ marks event days and the days before them. Event pairs and the 100 ordinary control pairs are in the jump list.",
+                                           "One sample pair: the day before CPI and CPI day. More in the full terminal.")));
 }
 
 function options(st, ctx, onReset) {

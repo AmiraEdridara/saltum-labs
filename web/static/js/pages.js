@@ -34,7 +34,8 @@ function control(name, allowed, value, onChange, ctx) {
     return el("label", {}, LABELS[name], input);
   }
   const select = el("select", { onchange: (e) => onChange({ [name]: e.target.value }) });
-  for (const v of allowed) {
+  select.disabled = PREVIEW;                          // the sample holds one example, so there is one choice
+  for (const v of PREVIEW ? [value] : allowed) {
     const o = el("option", { value: v }, OPTION_TEXT[v] || v);
     if (v === value) o.selected = true;
     select.append(o);
@@ -72,6 +73,7 @@ export function renderPage(container, paneId, paneState, ctx) {
   if (names.length) {
     const row = el("div", { class: "controls-row" });
     for (const n of names) row.append(control(n, p.params[n], paneState.params[n], (v) => ctx.setParams(paneId, v), ctx));
+    if (PREVIEW) row.append(el("span", { class: "muted small" }, "More in the full terminal"));
     container.append(row);
   }
   if (p.id === "event-study") {

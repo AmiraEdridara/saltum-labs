@@ -13,6 +13,7 @@ const KEYS = [
 ];
 
 const BASE = PREVIEW ? "/preview" : "/terminal";    // the homepage's preview is this same page, on sample data
+const PREVIEW_START = "?a.type=CPI&a.period=later";  // the one example in the sample file
 let state;
 let me;
 const shownPage = {};
@@ -132,6 +133,7 @@ function typing(t) {
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target) || document.querySelector("dialog[open]")) return;
   const k = e.key;
+  if (PREVIEW && "sSpP?[]".includes(k)) return;       // no Split view, shortcuts list or other dates in the preview
   const p = PAGES.find((x) => x.key === k);
   if (p) go(openPage(state.active, p.id));
   else if (k === "s" || k === "S") go({ ...state, split: !state.split, active: state.split ? "a" : state.active });
@@ -286,6 +288,8 @@ async function start() {
     document.querySelector(".account").classList.add("hidden");
     document.body.classList.add("is-preview");
     $("sample-tag").classList.remove("hidden");
+    $("toggle-split").classList.add("hidden");
+    $("show-keys").classList.add("hidden");
   }
   me = await get("/account/me");
   fillFooter(me.footer);
@@ -299,7 +303,7 @@ async function start() {
     : `${used} of ${me.limits.student_daily}`;
   $("acct-provider").textContent = me.provider === "dev" ? "local dev login" : me.provider;
 
-  state = parse(PREVIEW ? "" : location.search, me.layout);    // a reload hands the frame its last URL; the preview starts fresh
+  state = parse(PREVIEW ? PREVIEW_START : location.search, me.layout);    // a reload hands the frame its last URL; the preview starts fresh
   wire();
   applyTutorWidth(Number.isInteger(me.layout.tutor_width) ? me.layout.tutor_width : TUTOR_DEFAULT);
   // The tutor sees the active pane: its page and the URL parameters (dates and filters).

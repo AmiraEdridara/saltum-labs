@@ -1,5 +1,6 @@
 // Page 1: the event study (docs/prd.md). Every number comes from the API, shown with n and its source.
 // Nothing is calculated here except formatting and sorting. "Held or not" is quoted from the findings.
+import { PREVIEW } from "../api.js";
 import { cached, chartFailed, h, loadPlotly, num, periodName, plain, renderTicket, source, table, word } from "../lib.js";
 
 const TYPE_NAME = { CPI: "CPI", NFP: "Payrolls (NFP)", FOMC: "FOMC" };
@@ -171,9 +172,10 @@ function eventTable(ev, ctx, sort) {
        sort.key === key ? (sort.dir === "asc" ? " ▲" : " ▼") : ""))), h("th", { scope: "col" }, "Vol surface"));
   const body = rows.map((r) => h("tr", {}, COLUMNS.map(([, , f], i) => (i ? h("td", { class: i > 1 ? "r num" : "" }, f(r))
                                                                           : h("th", { scope: "row", class: "num" }, f(r)))),
-    h("td", {}, h("a", { href: ctx.surfaceHref(r.trade_date, r.date),
-                         onclick: (e) => { if (!e.ctrlKey && !e.metaKey && !e.shiftKey) { e.preventDefault(); ctx.openSurface(r.trade_date, r.date); } } },
-                  "Open"))));
+    PREVIEW && !ctx.dates.byDate.has(r.date) ? h("td", { class: "muted" }, "–")      // the sample has one pair of dates
+      : h("td", {}, h("a", { href: ctx.surfaceHref(r.trade_date, r.date),
+                             onclick: (e) => { if (!e.ctrlKey && !e.metaKey && !e.shiftKey) { e.preventDefault(); ctx.openSurface(r.trade_date, r.date); } } },
+                      "Open"))));
   const nm = ev.data.not_measured;
   const left = Object.entries(nm.by_type).filter(([, c]) => c).map(([t, c]) => `${c} ${t}`).join(", ");
   return h("section", { "aria-labelledby": "table-title" },

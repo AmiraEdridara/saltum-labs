@@ -1,6 +1,5 @@
 // The homepage tutor demo: a fixed script, played step by step. It calls no tutor and makes no requests.
-// Every number is invented: tests/web/test_home_page.py checks each one against the preview's sample file
-// (web/static/preview/sample.json), and that none is a real result.
+// Every number is invented: tests/web/test_home_page.py lists them and checks that none is a real result.
 export const DEMOS = [
   {
     name: "Look it up",

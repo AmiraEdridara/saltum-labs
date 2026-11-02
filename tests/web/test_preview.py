@@ -11,6 +11,7 @@ from webutil import sign_up
 
 STATIC = config.PROJECT_DIR / "web" / "static"
 SAMPLE = json.loads((STATIC / "preview" / "sample.json").read_text(encoding="utf-8"))
+DAY_BEFORE, CPI_DAY = "2026-06-19", "2026-06-22"
 PUBLIC_FILES = [STATIC / "terminal.html", STATIC / "home.html", *(STATIC / "js").rglob("*.js"), STATIC / "preview" / "sample.json"]
 
 
@@ -67,40 +68,46 @@ def test_the_sample_has_the_shape_of_the_api(client, api):
     same_keys(SAMPLE["dates"], real_dates)
     same_keys(SAMPLE["findings"], api("/findings"))
     next_real = api("/events/next")
-    same_keys({**SAMPLE["next"], "data": {**SAMPLE["next"]["data"], "soonest": None}}, {**next_real, "data": {**next_real["data"], "soonest": None}})
+    by_type = ("by_type", "in_the_past", "after_the_event")                 # the sample has only CPI in these
+    blank = lambda r: {**r, "data": {**r["data"], "soonest": None, **dict.fromkeys(by_type)}}
+    same_keys(blank(SAMPLE["next"]), blank(next_real))
+    for k in by_type:
+        same_keys(SAMPLE["next"]["data"][k]["CPI"], next_real["data"][k]["CPI"], k)
     events = api("/events?type=all&period=both")
     same_keys(SAMPLE["events"], {**events, "data": {**events["data"], "summaries": []}})
-    same_keys(SAMPLE["summaries"]["both"]["CPI"], events["data"]["summaries"][0])
+    same_keys(SAMPLE["events"]["data"]["summaries"][0], events["data"]["summaries"][0])
     same_keys(SAMPLE["index"], api("/events/index"))
-    same_keys(SAMPLE["summary_excluding_flagged"], api("/events/index?exclude_flagged=true")["data"]["summary"])
     day = [d for d in real_dates["data"]["dates"] if d["events"]][-1]["date"]
     surface = api(f"/surface/{day}")
-    for kind in ("before", "after"):
-        same_keys(SAMPLE["surface"][kind], surface)
+    for date in SAMPLE["surface"]:
+        same_keys(SAMPLE["surface"][date], surface)
     same_keys(next(iter(SAMPLE["skew"].values())), api(f"/events/{day}/skew"))
     assert set(SAMPLE["me"]) - {"email", "plan", "tutor_day", "tutor_msgs_today", "tutor_msgs_month", "provider", "layout", "limits", "footer"} == set()
 
 
-def test_the_sample_events_line_up_with_its_dates():
+def test_the_sample_is_one_example():
     dates = {d["date"]: d for d in SAMPLE["dates"]["data"]["dates"]}
-    assert SAMPLE["dates"]["data"]["data_to"] == max(dates) and SAMPLE["dates"]["v1_end"] < max(dates)
-    for r in SAMPLE["index"]["data"]["events"]:
-        assert r["event_date"] in dates and r["day_before"] in dates and {r["event_date"], r["day_before"]} <= set(SAMPLE["levels"])
-        if r["event_type"] != "ordinary":
-            assert dates[r["event_date"]]["events"] == r["event_type"] and dates[r["day_before"]]["events_next_day"] == r["event_type"]
-            assert r["event_date"] in SAMPLE["skew"]
-    assert {r["date"] for r in SAMPLE["events"]["data"]["events"]} <= set(dates)
+    assert list(dates) == [DAY_BEFORE, CPI_DAY] and SAMPLE["dates"]["data"]["data_to"] == CPI_DAY and SAMPLE["dates"]["v1_end"] < CPI_DAY
+    assert dates[DAY_BEFORE]["events_next_day"] == "CPI" and dates[CPI_DAY]["events"] == "CPI"
+    rows = SAMPLE["index"]["data"]["events"]
+    assert len(rows) == SAMPLE["index"]["n"] == 1 and (rows[0]["event_type"], rows[0]["day_before"], rows[0]["event_date"]) == ("CPI", DAY_BEFORE, CPI_DAY)
+    assert set(SAMPLE["surface"]) == {DAY_BEFORE, CPI_DAY} and set(SAMPLE["skew"]) == {CPI_DAY}
+    study = SAMPLE["events"]
+    assert study["period"] == "later" and [s["event_type"] for s in study["data"]["summaries"]] == ["CPI"]
+    assert {r["event_type"] for r in study["data"]["events"]} == {"CPI"} and CPI_DAY in {r["date"] for r in study["data"]["events"]}
+    assert [r["period"] for r in SAMPLE["next"]["data"]["in_the_past"]["CPI"]] == ["later"]
+    assert len(SAMPLE["tutor"]["session"]["messages"]) == 2
+    assert (STATIC / "preview" / "sample.json").stat().st_size < 50_000
 
 
 def test_the_sample_holds_no_real_event_or_median(api):
     real = api("/events?type=all&period=both")["data"]
     invented = {(r["date"], r["event_type"]) for r in SAMPLE["events"]["data"]["events"]}
     assert not invented & {(r["date"], r["event_type"]) for r in real["events"]}
-    for period in SAMPLE["summaries"]:
-        summ = {s["event_type"]: s for s in api(f"/events?type=all&period={period}")["data"]["summaries"]}
-        for t, s in SAMPLE["summaries"][period].items():
-            for k in ("median_implied_move_pct", "median_actual_move_pct", "median_premium_pp", "median_baseline_pct"):
-                assert round(s[k], 3) != round(summ[t][k], 3), (period, t, k)
+    summ = {s["event_type"]: s for s in api("/events?type=all&period=later")["data"]["summaries"]}
+    for s in SAMPLE["events"]["data"]["summaries"]:
+        for k in ("median_implied_move_pct", "median_actual_move_pct", "median_premium_pp", "median_baseline_pct"):
+            assert round(s[k], 3) != round(summ[s["event_type"]][k], 3), k
 
 
 # ---------------------------------------------------------------- in headless Edge, inside the homepage's frame
@@ -115,7 +122,12 @@ EXTRACT = f"""(() => {{
   return {{ top: txt(d.querySelector('.topbar')), foot: txt(d.querySelector('.footer')), title: d.title, path: w.location.pathname,
            nav: [...d.querySelectorAll('#nav-list a')].map((a) => a.firstChild.textContent),
            current: d.querySelector('#nav-list a[aria-current]').firstChild.textContent,
-           controls: [...d.querySelectorAll('.nav .controls button')].map((b) => b.firstChild.textContent.trim()),
+           controls: [...d.querySelectorAll('.nav .controls button')].filter((b) => b.getClientRects().length).map((b) => b.firstChild.textContent.trim()),
+           selects: [...pane.querySelectorAll('select')].filter((s) => !s.closest('.vs-numbers, details')).map((s) => [s.disabled, s.options.length]),
+           picker_buttons: [...pane.querySelectorAll('.vs-picker button')].map((b) => b.disabled),
+           event_rows: pane.querySelectorAll('table.events tbody tr').length,
+           open_links: [...pane.querySelectorAll('table.events a')].length,
+           more: (pane.innerText.match(/More in the full terminal/g) || []).length,
            tag_visible: d.getElementById('sample-tag').getClientRects().length > 0,
            account_visible: d.querySelector('.account').getClientRects().length > 0,
            brand_target: d.querySelector('.brand').target,
@@ -136,6 +148,7 @@ EXTRACT = f"""(() => {{
            widths: {{ page: document.documentElement.scrollWidth, inner: innerWidth, frame: d.documentElement.scrollWidth, frame_inner: w.innerWidth }},
            page_url: location.pathname, page_history: history.length,
            homepage: {{ button: document.querySelector('.tour .actions a').getAttribute('href'), text: document.querySelector('.tour .actions a').textContent,
+                        sign_up: [...document.querySelectorAll('.tour .actions a')].slice(1).map((a) => [a.textContent, a.getAttribute('href')]),
                         footer: document.getElementById('footer').textContent }} }};
 }})()"""
 REDUCED = [{"name": "prefers-reduced-motion", "value": "reduce"}]
@@ -155,7 +168,7 @@ def frame(browser):
         "index": nav_visit(1),
         "surface": nav_visit(2),
         "tutor": dict(url="/", logged_out=True, wait=LOADED, actions=[tutor],
-                      wait_after=f"{FRAME}.contentDocument.querySelectorAll('.tutor-msg').length === 4", extract=EXTRACT, timeout_s=60),
+                      wait_after=f"{FRAME}.contentDocument.querySelectorAll('.tutor-msg').length === 2", extract=EXTRACT, timeout_s=60),
         "reduced": nav_visit(1, media=REDUCED),
         "phone": dict(url="/", logged_out=True, width=390, height=844, mobile=True, wait=LOADED, extract=EXTRACT, timeout_s=60),
         "phone_surface": nav_visit(2, width=390, height=844, mobile=True),
@@ -170,8 +183,8 @@ def test_the_frame_shows_the_real_terminal(frame):
         assert r["ready"] and r["error"] is None and errors == [], (k, r["error"], errors)
         v = r["value"]
         assert v["errors"] == [] and v["path"] == "/preview" and v["page_url"] == "/", (k, v["errors"])
-        assert v["nav"] == ["Event study", "Event index", "Vol surface", "Help"] and v["controls"] == ["Split view", "Tutor", "Shortcuts"]
-        assert v["top"].startswith("Saltum Labs Underlying SPX Data to 2026-06-30") and v["tag_visible"] and not v["account_visible"]
+        assert v["nav"] == ["Event study", "Event index", "Vol surface", "Help"] and v["controls"] == ["Tutor"]
+        assert v["top"].startswith(f"Saltum Labs Underlying SPX Data to {CPI_DAY}") and v["tag_visible"] and not v["account_visible"]
         assert v["foot"].startswith("Education only, not advice.") and "sample data" in v["foot"]
         assert "frozen" not in v["top"]
         assert v["brand_target"] == "_top"
@@ -183,6 +196,32 @@ def test_the_sidebar_switches_between_the_real_pages(frame):
     assert frame["index"]["value"]["current"] == "Event index" and frame["index"]["value"]["sections"]["summary"]
     s = frame["surface"]["value"]["sections"]
     assert frame["surface"]["value"]["current"] == "Vol surface" and s["picker"] == 3 and s["skew"] and s["surfaces"] == 2
+
+
+def test_each_page_shows_its_one_example_and_nothing_else_can_be_picked(frame):
+    study, index, surface = (frame[k]["value"] for k in ("study", "index", "surface"))
+    assert study["selects"] == [[True, 1], [True, 1]] and study["more"] == 1 and study["event_rows"] == 8 and study["open_links"] == 1
+    assert "All (side by side)" not in study["pane"] and "Payrolls" not in study["pane"] and "FOMC" not in study["pane"]
+    assert index["selects"] == [[True, 1]] * 4 and index["more"] == 1 and index["event_rows"] == 1 and index["open_links"] == 1
+    assert surface["selects"][:3] == [[True, 2], [True, 2], [True, 2]], surface["selects"]
+    assert surface["picker_buttons"] == [True] * 6 and surface["more"] == 1
+    assert "Keyboard" not in study["pane"]
+
+
+def test_split_view_shortcuts_and_date_keys_do_nothing_in_the_preview(browser):
+    r = browser.visit([dict(url="/preview", logged_out=True, wait="!!document.querySelector('.next-event')", keys=["s", "?", "["],
+                            extract="""(() => ({ split: !document.getElementById('pane-b').classList.contains('hidden'),
+                                                 keys: document.getElementById('keys-dialog').open,
+                                                 note: document.getElementById('status').textContent }))()""",
+                            timeout_s=60)])[0]
+    assert r["value"] == {"split": False, "keys": False, "note": ""}
+
+
+def test_help_stays_as_it_is(browser):
+    r = browser.visit([dict(url="/preview", logged_out=True, wait="!!document.querySelector('.next-event')",
+                            actions=["document.querySelectorAll('#nav-list a')[3].click()"], wait_after="!!document.querySelector('#pane-a table.keys')",
+                            extract="document.getElementById('pane-a').innerText", timeout_s=60)])[0]
+    assert "Keyboard shortcuts" in r["value"] and "Toggle Split view" in r["value"]
 
 
 def test_the_frame_always_opens_on_event_study(browser):
@@ -213,7 +252,7 @@ def test_the_preview_calls_nothing(frame):
 
 def test_the_tutor_is_a_sample_and_cannot_be_asked(frame):
     t = frame["tutor"]["value"]["tutor"]
-    assert t["open"] and t["msgs"] == 4 and t["disabled"] and "not called" in t["note"]
+    assert t["open"] and t["msgs"] == 2 and t["disabled"] and "not called" in t["note"]
 
 
 def test_page_swaps_take_300ms_and_stop_under_reduced_motion(frame):
@@ -233,6 +272,7 @@ def test_the_terminal_phone_layout_fits_the_frame(frame):
 def test_the_homepage_around_the_frame(frame):
     h = frame["study"]["value"]["homepage"]
     assert h["text"] == "Open the real terminal" and h["button"] == "/terminal"
+    assert h["sign_up"] == [["Create a free account to see every event", "/login?mode=signup"]]
     assert "FRED" not in h["footer"] and "ThetaData" not in h["footer"]
 
 
