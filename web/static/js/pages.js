@@ -34,7 +34,7 @@ function control(name, allowed, value, onChange, ctx) {
     return el("label", {}, LABELS[name], input);
   }
   const select = el("select", { onchange: (e) => onChange({ [name]: e.target.value }) });
-  select.disabled = PREVIEW;                          // the sample holds one example, so there is one choice
+  if (PREVIEW) select.dataset.locked = "";            // one example, so one choice; a click opens the sign-up pop-up
   for (const v of PREVIEW ? [value] : allowed) {
     const o = el("option", { value: v }, OPTION_TEXT[v] || v);
     if (v === value) o.selected = true;

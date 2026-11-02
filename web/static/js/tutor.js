@@ -154,16 +154,17 @@ export async function initTutor({ context }) {
     }
     if (!saves) label("Sessions are not saved on your plan.");
   } catch { /* the panel still works; errors show when asking */ }
-  if (PREVIEW) {                                    // look-only: a sample conversation, and nothing can be sent
+  if (PREVIEW) {           // look-only: a sample conversation that can't be cleared; Ask, New and Sessions open the sign-up pop-up
     await openSession(1);
-    q.disabled = button.disabled = true;
-    q.placeholder = "Open the real terminal to ask";
+    q.readOnly = true;
+    for (const el of [q, button, $("tutor-new"), $("tutor-sessions-button")]) el.dataset.locked = "";
+    q.placeholder = "Create a free account to ask";
     $("tutor-left").textContent = "Preview: a sample conversation. The tutor is not called.";
   }
   const submit = async (e) => {
     e?.preventDefault();
     const question = q.value.trim();
-    if (!question || button.disabled) return;
+    if (PREVIEW || !question || button.disabled) return;
     addMessage("user", question);
     q.value = "";
     button.disabled = true;

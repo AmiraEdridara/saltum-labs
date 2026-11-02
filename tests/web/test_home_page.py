@@ -27,9 +27,11 @@ NUMBER = r"(?<![\w.:])[+−-]?\d[\d,]*(?:[.:]\d+)?%?"
 
 
 EARLY, LATE = "earlier", "later"
-# The demo's invented figures. The preview's sample file holds only CPI in the later period, so the rest are listed here.
-DEMO_FIGURES = {"+0.247", "+0.446", "+0.130", "+0.228", "0.527%"}
-DEMO_COUNTS = {"5", "6", "8"}
+# The demo quotes the preview's sample (CPI, later period), so both show the same invented numbers.
+CPI = SAMPLE["events"]["data"]["summaries"][0]
+DEMO_FIGURES = {f"+{CPI['median_premium_pp']:.3f}", f"{CPI['median_baseline_pct']:.3f}%",
+                f"{CPI['median_implied_move_pct']:.3f}%", f"{CPI['median_actual_move_pct']:.3f}%"}
+DEMO_COUNTS = {str(CPI["n"]), str(CPI["positive_premium_n"])}
 PRICES = {str(settings.TUTOR_DAILY_FREE), str(settings.TUTOR_MONTHLY_PLUS), str(settings.TUTOR_PLUS_GBP_MONTH)}
 ALLOWED = DEMO_FIGURES | DEMO_COUNTS | PRICES | {"500"}                # 500: the index's name, S&P 500
 
@@ -190,9 +192,9 @@ def test_the_prices_match_the_settings():
     assert f'<span class="num">{settings.TUTOR_MONTHLY_PLUS}</span> tutor questions a month' in pricing
 
 
-def test_demo_numbers_are_the_listed_invented_ones():
-    cpi = SAMPLE["events"]["data"]["summaries"][0]                      # the demo's CPI answer matches the preview's sample
-    assert (f"+{cpi['median_premium_pp']:.3f}", f"{cpi['median_baseline_pct']:.3f}%", str(cpi["n"])) == ("+0.247", "0.527%", "8")
+def test_demo_numbers_come_from_the_sample_file():
+    assert (CPI["event_type"], SAMPLE["events"]["period"]) == ("CPI", "later") and DEMO_COUNTS == {"8", "7"}
+    assert "7 of 8 days" in DEMO and "(n 8)" in DEMO
     for figure in DEMO_FIGURES:
         assert figure in DEMO, figure
     script = DEMO.split("export const DEMOS")[1]
@@ -322,7 +324,7 @@ def test_the_page_calls_nothing_but_its_own_files_and_the_preview(pages):
 def test_the_demo_is_labelled_as_sample_data(pages):
     v = pages["desktop"]["value"]
     assert v["demo"]["done"] == "true" and v["demo"]["pressed"] == "1" and v["demo"]["steps"] == 5 and v["tag"]
-    assert "+0.228 pp" in v["demo"]["text"] and "sample data:" in v["demo"]["text"] and "Sample data: invented numbers, not results." in v["demo"]["text"]
+    assert "7 of 8 days" in v["demo"]["text"] and "sample data:" in v["demo"]["text"] and "Sample data: invented numbers, not results." in v["demo"]["text"]
 
 
 def test_reduced_motion_shows_the_demo_at_once(pages):

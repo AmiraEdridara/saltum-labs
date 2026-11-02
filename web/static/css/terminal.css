@@ -118,6 +118,14 @@ select, input[type="date"], input[type="email"], input[type="password"], input[t
 
 dialog { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); max-width: 30rem; padding: 1.25rem; }
 dialog::backdrop { background: rgba(30, 27, 22, 0.35); }
+/* The preview's sign-up pop-up, opened by any locked control. Locked controls look and feel clickable. */
+.locked-dialog { width: min(24rem, calc(100vw - 2rem)); box-sizing: border-box; margin: auto; }
+.locked-dialog p { margin: 0 0 1rem; }
+.locked-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin: 0 !important; }
+.locked-actions .cta { background: var(--accent); color: #fff; border-radius: 6px; padding: 0.35rem 0.8rem; text-decoration: none; }
+.locked-actions .cta:hover { opacity: 0.9; }
+.locked-actions button { margin-left: auto; }
+.is-preview [data-locked] { cursor: pointer; }
 table.keys { border-collapse: collapse; width: 100%; }
 table.keys td { padding: 0.2rem 0.5rem; border-bottom: 1px solid var(--rule); }
 

@@ -14,6 +14,7 @@ const KEYS = [
 
 const BASE = PREVIEW ? "/preview" : "/terminal";    // the homepage's preview is this same page, on sample data
 const PREVIEW_START = "?a.type=CPI&a.period=later";  // the one example in the sample file
+const NO_PREVIEW_KEYS = ["S", "P", "?", "[", "]"];      // they do nothing in the preview, so Help leaves them out
 let state;
 let me;
 const shownPage = {};
@@ -34,7 +35,7 @@ function keysTable() {
   const t = document.createElement("table");
   t.className = "keys";
   const body = document.createElement("tbody");
-  for (const [k, what] of KEYS) {
+  for (const [k, what] of KEYS.filter(([k]) => !(PREVIEW && NO_PREVIEW_KEYS.includes(k)))) {
     const tr = document.createElement("tr");
     const a = document.createElement("td"), b = document.createElement("td"), kbd = document.createElement("kbd");
     kbd.textContent = k; a.append(kbd); b.textContent = what; tr.append(a, b); body.append(tr);
@@ -133,7 +134,7 @@ function typing(t) {
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target) || document.querySelector("dialog[open]")) return;
   const k = e.key;
-  if (PREVIEW && "sSpP?[]".includes(k)) return;       // no Split view, shortcuts list or other dates in the preview
+  if (PREVIEW && NO_PREVIEW_KEYS.includes(k.toUpperCase())) return;   // no Split view, shortcuts list or other dates
   const p = PAGES.find((x) => x.key === k);
   if (p) go(openPage(state.active, p.id));
   else if (k === "s" || k === "S") go({ ...state, split: !state.split, active: state.split ? "a" : state.active });
@@ -148,6 +149,32 @@ document.addEventListener("keydown", (e) => {
   else return;
   e.preventDefault();
 });
+
+// ------------------------------------------------------------ the preview's locked controls
+// They stay enabled (so they look worth trying); any click, tap or key on one opens the sign-up pop-up instead.
+// The listeners run first (capture), so the control's own handler never sees the event.
+function lockPreviewControls() {
+  const dialog = $("locked-dialog");
+  const locked = (e) => e.target instanceof Element && e.target.closest("[data-locked]");
+  document.addEventListener("mousedown", (e) => { if (locked(e)) e.preventDefault(); }, true);   // no list opens
+  document.addEventListener("click", (e) => {
+    if (!locked(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dialog.open) dialog.showModal();
+  }, true);
+  document.addEventListener("keydown", (e) => {
+    if (!locked(e) || ["Tab", "Shift", "Escape"].includes(e.key)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!dialog.open) dialog.showModal();
+  }, true);
+  $("locked-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (e) => {             // a tap on the backdrop, outside the box, closes it
+    const r = dialog.getBoundingClientRect();
+    if (e.target === dialog && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) dialog.close();
+  });
+}
 
 // ------------------------------------------------------------ wiring
 // ------------------------------------------------------------ tutor panel width (drag the left edge, or arrow keys)
@@ -290,6 +317,7 @@ async function start() {
     $("sample-tag").classList.remove("hidden");
     $("toggle-split").classList.add("hidden");
     $("show-keys").classList.add("hidden");
+    lockPreviewControls();
   }
   me = await get("/account/me");
   fillFooter(me.footer);

@@ -123,8 +123,8 @@ EXTRACT = f"""(() => {{
            nav: [...d.querySelectorAll('#nav-list a')].map((a) => a.firstChild.textContent),
            current: d.querySelector('#nav-list a[aria-current]').firstChild.textContent,
            controls: [...d.querySelectorAll('.nav .controls button')].filter((b) => b.getClientRects().length).map((b) => b.firstChild.textContent.trim()),
-           selects: [...pane.querySelectorAll('select')].filter((s) => !s.closest('.vs-numbers, details')).map((s) => [s.disabled, s.options.length]),
-           picker_buttons: [...pane.querySelectorAll('.vs-picker button')].map((b) => b.disabled),
+           selects: [...pane.querySelectorAll('select')].filter((s) => !s.closest('.vs-numbers, details')).map((s) => [s.disabled, s.options.length, s.hasAttribute('data-locked')]),
+           picker_buttons: [...pane.querySelectorAll('.vs-picker button')].map((b) => [b.disabled, b.hasAttribute('data-locked')]),
            event_rows: pane.querySelectorAll('table.events tbody tr').length,
            open_links: [...pane.querySelectorAll('table.events a')].length,
            more: (pane.innerText.match(/More in the full terminal/g) || []).length,
@@ -137,7 +137,8 @@ EXTRACT = f"""(() => {{
                        summary: !!d.querySelector('.ix-summary'), picker: d.querySelectorAll('.vs-picker select').length, skew: !!d.querySelector('.skew'),
                        surfaces: d.querySelectorAll('.plot-surface').length }},
            tutor: {{ open: !d.getElementById('tutor').classList.contains('hidden'), msgs: d.querySelectorAll('.tutor-msg').length,
-                     disabled: d.getElementById('tutor-q').disabled && d.querySelector('#tutor-form button[type=submit]').disabled,
+                     locked: ['tutor-q', 'tutor-new', 'tutor-sessions-button'].every((id) => d.getElementById(id).hasAttribute('data-locked'))
+                             && d.querySelector('#tutor-form button[type=submit]').hasAttribute('data-locked') && d.getElementById('tutor-q').readOnly,
                      note: d.getElementById('tutor-left').textContent }},
            swap: {{ name: css(pane).animationName, duration: css(pane).animationDuration, classed: pane.classList.contains('swap') }},
            nav_flex: css(d.querySelector('#nav-list')).display,
@@ -200,11 +201,12 @@ def test_the_sidebar_switches_between_the_real_pages(frame):
 
 def test_each_page_shows_its_one_example_and_nothing_else_can_be_picked(frame):
     study, index, surface = (frame[k]["value"] for k in ("study", "index", "surface"))
-    assert study["selects"] == [[True, 1], [True, 1]] and study["more"] == 1 and study["event_rows"] == 8 and study["open_links"] == 1
+    one = [False, 1, True]                                  # enabled-looking, one option, locked
+    assert study["selects"] == [one, one] and study["more"] == 1 and study["event_rows"] == 8 and study["open_links"] == 1
     assert "All (side by side)" not in study["pane"] and "Payrolls" not in study["pane"] and "FOMC" not in study["pane"]
-    assert index["selects"] == [[True, 1]] * 4 and index["more"] == 1 and index["event_rows"] == 1 and index["open_links"] == 1
-    assert surface["selects"][:3] == [[True, 2], [True, 2], [True, 2]], surface["selects"]
-    assert surface["picker_buttons"] == [True] * 6 and surface["more"] == 1
+    assert index["selects"] == [one] * 4 and index["more"] == 1 and index["event_rows"] == 1 and index["open_links"] == 1
+    assert surface["selects"][:3] == [one] * 3, surface["selects"]
+    assert surface["picker_buttons"] == [[False, True]] * 6 and surface["more"] == 1
     assert "Keyboard" not in study["pane"]
 
 
@@ -217,11 +219,74 @@ def test_split_view_shortcuts_and_date_keys_do_nothing_in_the_preview(browser):
     assert r["value"] == {"split": False, "keys": False, "note": ""}
 
 
-def test_help_stays_as_it_is(browser):
-    r = browser.visit([dict(url="/preview", logged_out=True, wait="!!document.querySelector('.next-event')",
-                            actions=["document.querySelectorAll('#nav-list a')[3].click()"], wait_after="!!document.querySelector('#pane-a table.keys')",
-                            extract="document.getElementById('pane-a').innerText", timeout_s=60)])[0]
-    assert "Keyboard shortcuts" in r["value"] and "Toggle Split view" in r["value"]
+def test_preview_help_lists_only_the_shortcuts_that_work_there(browser):
+    help_rows = "[...document.querySelectorAll('#pane-a table.keys kbd')].map((k) => k.textContent)"
+    preview, real = browser.visit([
+        dict(url="/preview", logged_out=True, wait="!!document.querySelector('.next-event')",
+             actions=["document.querySelectorAll('#nav-list a')[3].click()"], wait_after="!!document.querySelector('#pane-a table.keys')",
+             extract=help_rows, timeout_s=60),
+        dict(url="/terminal?a=help&split=0", wait="!!document.querySelector('#pane-a table.keys')", extract=help_rows, timeout_s=60)])
+    assert preview["value"] == ["1", "2", "3", "4", "T"]
+    assert real["value"] == ["1", "2", "3", "4", "S", "T", "P", "[", "]", "?"]
+
+
+# ---------------------------------------------------------------- the sign-up pop-up
+TRY_ALL = f"""(async () => {{
+  const w = {FRAME}.contentWindow, d = {FRAME}.contentDocument, dialog = d.getElementById('locked-dialog');
+  const before = w.location.search, tried = [];
+  for (const el of d.querySelectorAll('[data-locked]')) {{
+    if (!el.getClientRects().length) continue;
+    el.dispatchEvent(new w.MouseEvent('mousedown', {{ bubbles: true, cancelable: true }}));
+    el.click();
+    el.dispatchEvent(new w.KeyboardEvent('keydown', {{ key: 'ArrowDown', bubbles: true, cancelable: true }}));
+    const opened = dialog.open;
+    d.getElementById('locked-close').click();
+    tried.push([el.getAttribute('aria-label') || el.dataset.action || el.id || el.closest('label')?.firstChild.textContent.trim(), opened, dialog.open]);
+  }}
+  return {{ tried, same_url: w.location.search === before, msgs: d.querySelectorAll('.tutor-msg').length,
+           sessions_hidden: d.getElementById('tutor-sessions').classList.contains('hidden'),
+           text: dialog.innerText.replace(/\\s+/g, ' ').trim(),
+           links: [...dialog.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href'), a.target]) }};
+}})()"""
+
+
+@pytest.mark.parametrize("i, ready, expected", [
+    (0, ".headline", {"Event type", "Period", "tutor-q", "tutor-new", "tutor-sessions-button"}),
+    (1, ".ix-summary", {"Event type", "Period", "Exclude flagged days", "Show ordinary pairs"}),
+    (2, ".skew", {"Date 1", "Date 2", "Earlier date", "Later date", "Jump to a pair", "prev-pair", "next-pair"})])
+def test_every_locked_control_opens_the_sign_up_pop_up_and_changes_nothing(browser, i, ready, expected):
+    tutor = f"{FRAME}.contentDocument.getElementById('toggle-tutor').click()"
+    r = browser.visit([dict(url="/", logged_out=True, wait=LOADED, actions=[tutor, CLICK % i],
+                            wait_after=f"!!{FRAME}.contentDocument.querySelector('#pane-a {ready}') && {FRAME}.contentDocument.querySelectorAll('.tutor-msg').length === 2",
+                            extract=TRY_ALL, timeout_s=60)])[0]
+    v = r["value"]
+    assert {name for name, _, _ in v["tried"]} >= expected, v["tried"]
+    assert all(opened and not still for _, opened, still in v["tried"]), v["tried"]
+    assert v["same_url"] and v["msgs"] == 2 and v["sessions_hidden"]
+    assert v["text"].startswith("This is a preview with one example. Create a free account to explore every event and date.")
+    assert v["links"] == [["Create a free account", "/login?mode=signup", "_top"], ["Log in", "/login", "_top"]]
+
+
+POP_UP = """(() => {
+  const d = document.getElementById('locked-dialog'), open = () => (d.open || document.querySelector('[data-locked]').click(), d.open);
+  const r = (open(), d.getBoundingClientRect());
+  const box = { left: r.left, right: r.right, inner: innerWidth, wide: document.documentElement.scrollWidth <= innerWidth,
+                buttons: [...d.querySelectorAll('a, button')].map((b) => b.getBoundingClientRect().right <= r.right) };
+  d.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 2, clientY: 2 }));
+  return { ...box, closed_by_outside_tap: !d.open };
+})()"""
+
+
+def test_the_pop_up_fits_at_360_and_closes_with_a_tap_outside_or_escape(browser):
+    opened = "!!document.querySelector('[data-locked]') && (document.getElementById('locked-dialog').open || (document.querySelector('[data-locked]').click(), true))"
+    tap, esc = browser.visit([
+        dict(url="/preview", logged_out=True, width=360, height=740, mobile=True, wait="!!document.querySelector('[data-locked]')", extract=POP_UP, timeout_s=60),
+        dict(url="/preview", logged_out=True, width=360, height=740, mobile=True, wait=opened, keys=["Escape"],
+             wait_after="!document.getElementById('locked-dialog').open", extract="document.getElementById('locked-dialog').open", timeout_s=60)])
+    v = tap["value"]
+    assert v["left"] >= 8 and v["right"] <= v["inner"] - 8 and v["wide"] and all(v["buttons"]), v
+    assert v["closed_by_outside_tap"]
+    assert esc["value"] is False and esc["ready"]
 
 
 def test_the_frame_always_opens_on_event_study(browser):
@@ -252,7 +317,7 @@ def test_the_preview_calls_nothing(frame):
 
 def test_the_tutor_is_a_sample_and_cannot_be_asked(frame):
     t = frame["tutor"]["value"]["tutor"]
-    assert t["open"] and t["msgs"] == 2 and t["disabled"] and "not called" in t["note"]
+    assert t["open"] and t["msgs"] == 2 and t["locked"] and "not called" in t["note"]
 
 
 def test_page_swaps_take_300ms_and_stop_under_reduced_motion(frame):
