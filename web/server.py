@@ -24,7 +24,7 @@ from .users import TutorStore, UserStore, public
 API_PATHS = [re.compile(p) for p in (r"events", r"events/index", r"events/[^/]+", r"events/[^/]+/skew",
                                      r"surface/[^/]+", r"dates", r"findings", r"definitions")]
 
-app = FastAPI(title="Macro Wire terminal", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="Saltum Labs terminal", docs_url=None, redoc_url=None, openapi_url=None)
 app.state.store = UserStore(settings.USERS_DB)
 app.state.provider = default_provider(app.state.store)
 app.state.api_transport = None            # tests can put an in-process transport here

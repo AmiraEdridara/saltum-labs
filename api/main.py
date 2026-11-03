@@ -14,7 +14,7 @@ from .common import NotFound
 from .validation import BadInput
 
 # No /docs, /redoc or /openapi.json: they would be endpoints without auth.
-app = FastAPI(title="Macro Wire API", docs_url=None, redoc_url=None, openapi_url=None,
+app = FastAPI(title="Saltum Labs API", docs_url=None, redoc_url=None, openapi_url=None,
               dependencies=[Depends(require_user)])
 app.state.authenticator = default_authenticator()
 if not getattr(app.state.authenticator, "configured", True):

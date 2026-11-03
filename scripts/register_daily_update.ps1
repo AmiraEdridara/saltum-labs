@@ -1,4 +1,5 @@
-# Registers the Macro Wire daily update in Windows Task Scheduler, for the current user only.
+# Registers the Saltum Labs daily update in Windows Task Scheduler, for the current user only.
+# The task keeps its existing name, "Macro Wire daily update". Git Bash: bash scripts/register_daily_update.sh
 # Run it yourself, once, from the project folder:
 #     powershell -ExecutionPolicy Bypass -File scripts\register_daily_update.ps1
 # Remove it again with:
@@ -26,7 +27,7 @@ $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances 
 $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
 
 Register-ScheduledTask -TaskName "Macro Wire daily update" -Action $action -Trigger $triggers -Settings $settings `
-    -Principal $principal -Description "Appends new trading days, events and 'priced now' to Macro Wire (daily_update.py). Log: data\live\update_log.txt" `
+    -Principal $principal -Description "Appends new trading days, events and 'priced now' to Saltum Labs (daily_update.py). Log: data\live\update_log.txt" `
     -Force | Out-Null
 
 Write-Host "Registered 'Macro Wire daily update': daily at 21:45 and 22:45, and at log-on (only while you are logged on)."
