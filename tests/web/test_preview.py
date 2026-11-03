@@ -7,6 +7,7 @@ import pytest
 
 import config
 from web import settings
+from tests.private_files import needs
 from webutil import sign_up
 
 STATIC = config.PROJECT_DIR / "web" / "static"
@@ -63,6 +64,7 @@ def api(client):
     return lambda path: client.get("/api" + path).json()
 
 
+@needs("database")
 def test_the_sample_has_the_shape_of_the_api(client, api):
     real_dates = api("/dates")
     same_keys(SAMPLE["dates"], real_dates)
@@ -100,6 +102,7 @@ def test_the_sample_is_one_example():
     assert (STATIC / "preview" / "sample.json").stat().st_size < 50_000
 
 
+@needs("database")
 def test_the_sample_holds_no_real_event_or_median(api):
     real = api("/events?type=all&period=both")["data"]
     invented = {(r["date"], r["event_type"]) for r in SAMPLE["events"]["data"]["events"]}
@@ -362,6 +365,7 @@ PICKER = r"""(() => {
 URL = "/terminal?a=vol-surface&split=0"
 
 
+@needs("database")
 @pytest.mark.parametrize("width", [390, 360])
 def test_phone_date_lists_fit_and_their_labels_stay_on_one_line(browser, width):
     r = browser.visit([dict(url=URL, width=width, height=800, mobile=True, wait="!!document.querySelector('.vs-picker select')", extract=PICKER)])[0]

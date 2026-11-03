@@ -43,9 +43,12 @@ def allowance(user):
     now = today()
     if user["plan"] == "tutor_plus":
         used = user["tutor_msgs_month"] if user["tutor_month"] == now.strftime("%Y-%m") else 0
-        return dict(limit=settings.TUTOR_MONTHLY_PLUS, used=used, left=max(0, settings.TUTOR_MONTHLY_PLUS - used), per="month")
-    used = user["tutor_msgs_today"] if user["tutor_day"] == now.date().isoformat() else 0
-    return dict(limit=settings.TUTOR_DAILY_FREE, used=used, left=max(0, settings.TUTOR_DAILY_FREE - used), per="day")
+        limit, per = settings.TUTOR_MONTHLY_PLUS, "month"
+    else:
+        used = user["tutor_msgs_today"] if user["tutor_day"] == now.date().isoformat() else 0
+        limit, per = settings.TUTOR_DAILY_FREE, "day"
+    # No limit is applied when web/pricing.json is missing (it is kept out of git).
+    return dict(limit=limit, used=used, left=None if limit is None else max(0, limit - used), per=per)
 
 
 def cost(usage):
@@ -139,7 +142,7 @@ async def ask(*, client, tools, store, users, user, question, ctx_raw, session_i
     if not configured():
         raise TutorError(503, "The tutor is not configured on this server (ANTHROPIC_API_KEY is missing from .env).")
     left = allowance(user)
-    if left["left"] <= 0:
+    if left["left"] is not None and left["left"] <= 0:
         raise TutorError(429, f"You have used your {left['limit']} tutor questions this {left['per']}. "
                               + ("They reset at midnight UTC." if left["per"] == "day" else "They reset at the start of next month (UTC)."))
     save = user["plan"] in settings.TUTOR_SAVE_SESSIONS_PLANS

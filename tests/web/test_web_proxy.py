@@ -2,6 +2,7 @@
 import pytest
 
 import config
+from tests.private_files import needs
 from web import settings
 from webutil import TOKEN, sign_up
 
@@ -16,6 +17,7 @@ def test_logged_out_request_is_refused_before_the_api(client, web, url):
 
 
 @pytest.mark.parametrize("url", API_URLS)
+@needs("database")
 def test_logged_in_request_reaches_the_api_with_the_token(client, web, url):
     sign_up(client)
     r = client.get(url)
@@ -27,6 +29,7 @@ def test_logged_in_request_reaches_the_api_with_the_token(client, web, url):
     assert TOKEN not in r.text and TOKEN not in str(r.headers)            # the browser never sees it
 
 
+@needs("database")
 def test_query_and_errors_pass_through(client):
     sign_up(client)
     assert client.get("/api/events?type=CPI&period=2023-06..now").json()["data"]["summaries"][0]["n"] == 39
@@ -64,10 +67,12 @@ def test_api_down_gives_a_clear_502(client, web):
     assert r.status_code == 502 and "not reachable" in r.json()["error"]
 
 
+@needs("database")
 def test_the_tests_read_a_private_copy_of_the_database():
     assert config.DUCKDB_PATH != config.PROJECT_DIR / "data" / "macro_wire.duckdb" and config.DUCKDB_PATH.exists()
 
 
+@needs("database")
 def test_the_browser_uses_period_ids_and_only_the_server_knows_the_dates(client):
     assert client.get("/api/events?type=CPI&period=earlier").status_code == 401
     sign_up(client)

@@ -1,6 +1,9 @@
 """Page 1 in headless Edge: the numbers the page displays match stage3_periods.txt and findings_v1.md for
 every type and period; every figure and headline shows n and a source; the payrolls premium is shown as
 not holding only in the findings' own words; the next-event panel; Split view and phone width."""
+from tests.private_files import require
+
+require("database", "stage3 summary", "findings")
 import json
 import re
 import sys

@@ -2,6 +2,9 @@
 field for 4 event pairs, shows flags next to the chart, falls back to a flat contour map without 3D graphics,
 uses the stored change only for event and control pairs, fits Split view and phone width, and leaves no
 browser processes running."""
+from tests.private_files import require
+
+require("database", "event pages")
 import json
 import math
 import subprocess

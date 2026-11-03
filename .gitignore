@@ -1,24 +1,18 @@
 .env
 certs/
-# data/: only the frozen text results and the freeze checksums are tracked. Never the database, the Parquet
-# chains or any quote-level CSV (licensed for personal use, not redistributed).
-data/*
-!data/findings_v1.md
-!data/summary_stage3.txt
-!data/stage3_periods.txt
-!data/summary_1615.txt
-!data/fixed_minute_results.txt
-!data/validate_log.txt
-!data/skew_summary.txt
-!data/stage5b_summary.txt
-!data/stage5b_readme.md
-!data/exploratory_nfp_friday.txt
-!data/stage5_checksum_pre_5b.txt
-!data/vol_surface_checksum_pre_vanna.txt
-!data/stage7_checksums_before.csv
-!data/live/
-data/live/*
-!data/live/v1_checksums.csv
+# Private, kept on this PC and out of git (ThetaData's personal-use terms): the database, the chains, and every
+# result or number derived from them, including the frozen findings and summaries.
+data/
+*.duckdb
+*.parquet
+docs/video_cpi_facts.md
+tests/live/test_tutor_live.py
+README_private.md
+# Private product details: the PRD and the plan prices.
+docs/prd.md
+web/pricing.json
+# Secrets.
+.env.*
 web/var/
 tests/web/browser_drops.log
 .venv/

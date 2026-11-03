@@ -5,11 +5,16 @@ import datetime as dt
 import json
 from types import SimpleNamespace
 
-import pytest
+import functools
 
+import pytest
+from fastapi.testclient import TestClient
+
+from api.main import app as api_app
+from tests.private_files import HAVE, needs
 from web import settings
 from web.tutor import numbers, prompt, service
-from webutil import sign_up
+from webutil import TOKEN, sign_up
 
 FAKE_KEY = "sk-ant-test-not-a-real-key-0123456789"
 
@@ -65,12 +70,24 @@ def use(app, *script):
     return app.state.tutor_client
 
 
-CPI_ANSWER = ("In 2023-06 to now, CPI days carried a median premium of +0.264 pp over nearby ordinary days "
-              "(event_premium, n 41), on a median baseline of 0.497% (event_premium).")
+@functools.cache
+def cpi_summary():
+    """The API's own CPI summary for the later period. The fake answers quote it, so that no real figure is written in
+    this public file; the tools read the private database, so without it these tests are skipped."""
+    if not HAVE["database"]:
+        pytest.skip(needs("database").kwargs["reason"])
+    r = TestClient(api_app).get("/events?type=CPI&period=2023-06..now", headers={"Authorization": f"Bearer {TOKEN}"})
+    return r.json()["data"]["summaries"][0]
+
+
+def cpi_answer():
+    s = cpi_summary()
+    return (f"In 2023-06 to now, CPI days carried a median premium of {s['median_premium_pp']:+.3f} pp over nearby ordinary days "
+            f"(event_premium, n {s['n']}), on a median baseline of {s['median_baseline_pct']:.3f}% (event_premium).")
 
 
 def cpi_script():
-    return [reply(tool("list_events", type="CPI", period="2023-06..now")), reply(text(CPI_ANSWER), usage=(3000, 120, 0, 2000))]
+    return [reply(tool("list_events", type="CPI", period="2023-06..now")), reply(text(cpi_answer()), usage=(3000, 120, 0, 2000))]
 
 
 # ------------------------------------------------------------ routing and the tool loop
@@ -90,12 +107,12 @@ def test_analysis_uses_sonnet_tools_and_the_real_api(client, tutor_app):
     sign_up(client)
     fake = use(tutor_app, *cpi_script())
     j = ask(client, "What was the CPI premium after 2023-06?").json()
-    assert j["status"] == "answered" and j["route"] == "analysis" and j["answer"] == CPI_ANSWER
+    assert j["status"] == "answered" and j["route"] == "analysis" and j["answer"] == cpi_answer()
     assert fake.requests[0]["model"] == settings.TUTOR_MODEL_ANALYSIS
     assert [t["name"] for t in fake.requests[0]["tools"]] == ["list_events", "get_event", "get_surface_metrics", "get_findings", "get_definition"]
     tool_result = json.loads(fake.requests[1]["messages"][-1]["content"][0]["content"])   # what the model got back
-    assert tool_result["source"] == ["event_moves", "event_premium", "date_list"] and tool_result["summaries"][0]["n"] == 41
-    assert round(tool_result["summaries"][0]["median_premium_pp"], 3) == 0.264
+    assert tool_result["source"] == ["event_moves", "event_premium", "date_list"] and tool_result["summaries"][0]["n"] == cpi_summary()["n"]
+    assert tool_result["summaries"][0]["median_premium_pp"] == round(cpi_summary()["median_premium_pp"], 3)   # the tool rounds
     assert fake.requests[0]["system"][0]["cache_control"] == {"type": "ephemeral"}        # prompt caching
 
 
@@ -117,7 +134,7 @@ def test_routing_rule(q, want):
 
 # ------------------------------------------------------------ the number check
 def test_number_check_unit():
-    src = [{"median_premium_pp": 0.26419, "n": 39, "date": "2026-09-11", "period": "2020-01..2023-05"}]
+    src = [{"median_premium_pp": 0.26419, "n": 41, "date": "2026-09-11", "period": "2020-01..2023-05"}]
     assert numbers.unverified("A premium of +0.264 pp (n 41) on 2026-09-11.", src) == []
     assert numbers.unverified("About 0.26 pp, in 2020–23, at the 16:15 close, 25-delta, 90% interval.", src) == []
     assert numbers.unverified("A premium of 0.25 pp on 2026-09-12.", src) == ["2026-09-12", "0.25"]
@@ -125,7 +142,7 @@ def test_number_check_unit():
 
 
 def test_number_check_reads_the_findings_minus_sign_and_the_index_name():
-    findings = {"markdown": "30-day RR25 | CPI | 64 | −0.412 | 27% | −0.158 | [−0.291, −0.047]"}
+    findings = {"markdown": "30-day RR25 | CPI | 64 | −0.412 | 27% | −0.158 | [−0.291, −0.047]"}     # invented figures
     assert numbers.unverified("Event minus ordinary was −0.158, interval [−0.291, −0.047], in S&P 500 options.", [findings]) == []
     assert numbers.unverified("It was -0.158 (n 64).", [findings]) == []
 
@@ -133,9 +150,9 @@ def test_number_check_reads_the_findings_minus_sign_and_the_index_name():
 def test_unverified_answer_is_regenerated_once(client, tutor_app):
     sign_up(client)
     fake = use(tutor_app, reply(tool("list_events", type="CPI", period="2023-06..now")),
-               reply(text("The premium was 0.777 pp.")), reply(text(CPI_ANSWER)))
+               reply(text("The premium was 0.777 pp.")), reply(text(cpi_answer())))
     j = ask(client, "What was the CPI premium after 2023-06?").json()
-    assert j["status"] == "answered" and j["answer"] == CPI_ANSWER
+    assert j["status"] == "answered" and j["answer"] == cpi_answer()
     assert "0.777" in fake.requests[-1]["messages"][-1]["content"]                       # told which number failed
     row = tutor_app.state.store.__class__  # noqa: F841
     from web.users import TutorStore
@@ -143,6 +160,7 @@ def test_unverified_answer_is_regenerated_once(client, tutor_app):
     assert u["regenerated"] == 1 and u["status"] == "answered" and u["counted"] == 1
 
 
+@needs("database")                                  # the list_events tool reads it
 def test_still_unverified_is_not_shown_not_counted_but_logged(client, tutor_app):
     sign_up(client)
     use(tutor_app, reply(tool("list_events", type="CPI", period="2023-06..now")),
@@ -158,30 +176,32 @@ def test_still_unverified_is_not_shown_not_counted_but_logged(client, tutor_app)
 
 # ------------------------------------------------------------ limits, cost and errors
 def test_student_daily_limit(client, tutor_app, monkeypatch):
+    monkeypatch.setattr(settings, "TUTOR_DAILY_FREE", 3)          # invented limit: the real plan limits are private
     sign_up(client)
-    use(tutor_app, *(cpi_script() * 7))
-    for i in range(7):
-        assert ask(client, "What was the CPI premium after 2023-06?").json()["allowance"]["left"] == 6 - i
+    use(tutor_app, *(cpi_script() * 3))
+    for i in range(3):
+        assert ask(client, "What was the CPI premium after 2023-06?").json()["allowance"]["left"] == 2 - i
     fake = use(tutor_app)
     r = ask(client, "One more?")
-    assert r.status_code == 429 and "7 tutor questions this day" in r.json()["error"] and fake.requests == []
+    assert r.status_code == 429 and "3 tutor questions this day" in r.json()["error"] and fake.requests == []
     monkeypatch.setattr(service, "today", lambda: dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1))
     use(tutor_app, *cpi_script())
     assert ask(client, "What was the CPI premium after 2023-06?").status_code == 200      # a new UTC day
 
 
-def test_tutor_plus_monthly_limit(client, tutor_app):
+def test_tutor_plus_monthly_limit(client, tutor_app, monkeypatch):
+    monkeypatch.setattr(settings, "TUTOR_MONTHLY_PLUS", 40)       # invented limit: the real plan limits are private
     sign_up(client)
     store = tutor_app.state.store
     uid = store.by_email("student@example.com")["id"]
     store.set_plan(uid, "tutor_plus")
     month = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m")
     with store._con() as con:
-        con.execute("UPDATE users SET tutor_msgs_month = 249, tutor_month = ? WHERE id = ?", (month, uid))
+        con.execute("UPDATE users SET tutor_msgs_month = 39, tutor_month = ? WHERE id = ?", (month, uid))
     use(tutor_app, *cpi_script())
-    assert ask(client, "What was the CPI premium after 2023-06?").json()["allowance"] == dict(limit=250, used=250, left=0, per="month")
+    assert ask(client, "What was the CPI premium after 2023-06?").json()["allowance"] == dict(limit=40, used=40, left=0, per="month")
     r = ask(client, "Another?")
-    assert r.status_code == 429 and "250 tutor questions this month" in r.json()["error"]
+    assert r.status_code == 429 and "40 tutor questions this month" in r.json()["error"]
 
 
 def test_cost_is_logged_from_token_counts(client, tutor_app):
@@ -234,11 +254,11 @@ def test_sessions_saved_continued_listed_deleted(client, tutor_app):
     use(tutor_app, *cpi_script())
     sid = ask(client, "What was the CPI premium after 2023-06?").json()["session_id"]
     assert isinstance(sid, int)
-    fake = use(tutor_app, reply(text("Yes: that was +0.264 pp (event_premium, n 41).")))
+    fake = use(tutor_app, reply(text(f"Yes: that was {cpi_summary()['median_premium_pp']:+.3f} pp (event_premium, n {cpi_summary()['n']}).")))
     j = ask(client, "Was that positive?", session_id=sid).json()
     assert j["status"] == "answered" and j["session_id"] == sid                        # number traced to the earlier tool result
     sent = fake.requests[0]["messages"]
-    assert sent[0] == {"role": "user", "content": "What was the CPI premium after 2023-06?"} and sent[1]["content"] == CPI_ANSWER
+    assert sent[0] == {"role": "user", "content": "What was the CPI premium after 2023-06?"} and sent[1]["content"] == cpi_answer()
     s = client.get("/tutor/sessions").json()["sessions"]
     assert len(s) == 1 and s[0]["messages"] == 4 and s[0]["title"].startswith("What was the CPI premium")
     msgs = client.get(f"/tutor/sessions/{sid}").json()["messages"]

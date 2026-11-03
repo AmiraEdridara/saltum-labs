@@ -326,9 +326,10 @@ async function start() {
   $("acct-email").textContent = me.email;
   $("acct-plan").textContent = me.plan === "tutor_plus" ? "Tutor plus" : "Student (free)";
   const used = me.tutor_day === new Date().toISOString().slice(0, 10) ? me.tutor_msgs_today : 0;
+  const limit = me.plan === "tutor_plus" ? me.limits.tutor_plus_monthly : me.limits.student_daily;
   $("acct-tutor").textContent = me.plan === "tutor_plus"
-    ? `${me.tutor_msgs_month} of ${me.limits.tutor_plus_monthly} this month`
-    : `${used} of ${me.limits.student_daily}`;
+    ? `${me.tutor_msgs_month} of ${limit ?? "–"} this month`
+    : `${used} of ${limit ?? "–"}`;
   $("acct-provider").textContent = me.provider === "dev" ? "local dev login" : me.provider;
 
   state = parse(PREVIEW ? PREVIEW_START : location.search, me.layout);    // a reload hands the frame its last URL; the preview starts fresh

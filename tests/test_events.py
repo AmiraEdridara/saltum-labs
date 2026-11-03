@@ -1,4 +1,7 @@
 """Every event-study summary the API returns matches data/stage3_periods.txt and data/findings_v1.md."""
+from tests.private_files import require
+
+require("database", "stage3 summary", "findings")
 import re
 
 import pytest

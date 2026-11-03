@@ -1,9 +1,9 @@
 """GET /definitions: the PRD's five terms word for word, the ten extra site terms, lookup by term, and auth."""
 import re
 
-import config
+from tests.private_files import HAVE, PRIVATE, needs
 
-PRD = (config.PROJECT_DIR / "docs" / "prd.md").read_text(encoding="utf-8")
+PRD = PRIVATE["PRD"].read_text(encoding="utf-8") if HAVE["PRD"] else ""
 
 
 def test_all_terms(get):
@@ -13,6 +13,7 @@ def test_all_terms(get):
     assert terms[:5] == ["Implied move", "Actual move", "Baseline", "Premium", "Variance premium"]
 
 
+@needs("PRD")
 def test_prd_terms_word_for_word(get):
     for t in get("/definitions")["data"]["terms"][:5]:
         assert re.search(rf"^\| {re.escape(t['term'])} \| {re.escape(t['definition'])} \|$", PRD, re.M), t["term"]

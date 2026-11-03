@@ -7,10 +7,12 @@ import re
 import pytest
 
 import config
+from tests.private_files import HAVE, PRIVATE, needs
 from web import settings
 from webutil import sign_up
 
-FINDINGS = (config.PROJECT_DIR / "data" / "findings_v1.md").read_text(encoding="utf-8")
+# The real-number guards compare against the private findings file; without it they are skipped.
+FINDINGS = PRIVATE["findings"].read_text(encoding="utf-8") if HAVE["findings"] else ""
 STATIC = config.PROJECT_DIR / "web" / "static"
 SAMPLE = json.loads((STATIC / "preview" / "sample.json").read_text(encoding="utf-8"))
 HTML = (STATIC / "home.html").read_text(encoding="utf-8")
@@ -32,16 +34,16 @@ CPI = SAMPLE["events"]["data"]["summaries"][0]
 DEMO_FIGURES = {f"+{CPI['median_premium_pp']:.3f}", f"{CPI['median_baseline_pct']:.3f}%",
                 f"{CPI['median_implied_move_pct']:.3f}%", f"{CPI['median_actual_move_pct']:.3f}%"}
 DEMO_COUNTS = {str(CPI["n"]), str(CPI["positive_premium_n"])}
-PRICES = {str(settings.TUTOR_DAILY_FREE), str(settings.TUTOR_MONTHLY_PLUS), str(settings.TUTOR_PLUS_GBP_MONTH)}
+PRICES = {str(v) for v in (settings.TUTOR_DAILY_FREE, settings.TUTOR_MONTHLY_PLUS, settings.TUTOR_PLUS_GBP_MONTH) if v is not None}
 ALLOWED = DEMO_FIGURES | DEMO_COUNTS | PRICES | {"500"}                # 500: the index's name, S&P 500
 
 
 def real_figures():
-    """The figures and dates of the frozen findings, and the counts the old homepage showed."""
+    """The figures and dates of the frozen findings (read from the private file, so no real figure is written here)."""
     decimals = re.findall(r"\d+\.\d{2,}", FINDINGS)
     dates = re.findall(r"\d{4}-\d{2}-\d{2}", FINDINGS)
     years = re.findall(r"\b20(?:20|2[1-6])[–-]\d{2}\b", FINDINGS)
-    return set(decimals) | set(dates) | set(years) | {str(config.V1_END), "1,650", "1,630", "187", "411", "2023-05", "2023-06"}
+    return set(decimals) | set(dates) | set(years) | {str(config.V1_END), "2023-05", "2023-06"}
 
 
 def real_in(text):
@@ -116,6 +118,7 @@ def sample_values(node, key=""):
         yield key, node
 
 
+@needs("findings")
 def test_the_public_file_guards_can_fail():
     assert real_in('const PERIODS = ["both", "2020-01..2023-05", "2023-06..now"];')
     assert real_in('{"period":"2023-06..now"}') and not real_in('{"date":"2023-05-18"}')  # an invented day in a real month
@@ -123,17 +126,20 @@ def test_the_public_file_guards_can_fail():
     assert re.search(LOGIN_ONLY, "· v1 frozen to") and re.search(LOGIN_ONLY, "(Stage 5b)")
 
 
+@needs("findings")
 def test_no_public_file_holds_a_real_figure_or_date():
     for f in PUBLIC_FILES:
         assert set(real_in(f.read_text(encoding="utf-8"))) <= PLOT_CONSTANTS, f
 
 
+@needs("findings")
 def test_no_text_in_the_sample_file_holds_a_real_figure_or_date():
     # Its 4,700 raw numbers are invented, and some match a figure in the findings by chance (0.02), so those are not
     # compared one by one; every string, every date and every median is.
     assert real_in(" ".join(v for _, v in sample_values(SAMPLE) if isinstance(v, str))) == []
 
 
+@needs("findings")
 def test_no_median_in_the_sample_file_is_a_real_figure():
     real = set(re.findall(r"\d+\.\d{3}", FINDINGS))
     medians = [(k, v) for k, v in sample_values(SAMPLE) if k.startswith("median_") and isinstance(v, float)]
@@ -147,22 +153,28 @@ def test_no_public_file_has_login_only_wording():
             assert wording not in text, (name, wording)
 
 
+@needs("findings")
 def test_the_guard_sees_a_real_number():
-    # The check below is only worth having if it can fail: each of these is a real v1 figure or date.
-    for text in ("median premium +0.264 pp", "baseline 0.493%", f"data to {config.V1_END}", "187 events", "2023-06 to now"):
+    # The check below is only worth having if it can fail: each of these holds a real v1 figure or date, taken from
+    # the private findings file so that none is written in this public test.
+    figure = re.findall(r"\b0\.\d{3}\b", FINDINGS)[0]
+    for text in (f"median premium +{figure} pp", f"baseline {figure}%", f"data to {config.V1_END}", "2023-06 to now"):
         assert real_in(text), text
     assert real_figures() and not real_in("S&P 500, 7 tutor questions, £12 a month, 250 questions")
 
 
+@needs("findings")
 def test_no_real_number_is_in_the_homepage_files(client):
     for name, text in (("/", client.get("/").text), ("/method", client.get("/method").text), ("home.js", JS), ("home_demo.js", DEMO)):
         assert real_in(text) == [], name
 
 
+@needs("findings")
 def test_the_sample_figures_are_not_real_ones():
     assert real_in(" ".join(sorted(DEMO_FIGURES))) == []
 
 
+@needs("database")
 def test_no_median_from_the_api_is_on_the_homepage(client):
     page = client.get("/").text + DEMO
     sign_up(client)
@@ -185,11 +197,14 @@ def test_no_public_page_has_the_real_v1_date(client):
 
 
 # ---------------------------------------------------------------- the page's own figures
-def test_the_prices_match_the_settings():
-    pricing = HTML.split('id="pricing"')[1]
-    assert f'<span class="num">{settings.TUTOR_DAILY_FREE}</span> tutor questions a day' in pricing
-    assert f'£<span class="num">{settings.TUTOR_PLUS_GBP_MONTH}</span> a month' in pricing
-    assert f'<span class="num">{settings.TUTOR_MONTHLY_PLUS}</span> tutor questions a month' in pricing
+def test_the_prices_are_filled_in_by_the_server(client):
+    # home.html holds placeholders only; the server fills them in from web/pricing.json, which is kept out of git.
+    assert not re.search(r'class="num">\d', HTML.split('id="pricing"')[1])
+    pricing = client.get("/").text.split('id="pricing"')[1]
+    show = lambda v: "–" if v is None else str(v)
+    assert f'<span class="num">{show(settings.TUTOR_DAILY_FREE)}</span> tutor questions a day' in pricing
+    assert f'£<span class="num">{show(settings.TUTOR_PLUS_GBP_MONTH)}</span> a month' in pricing
+    assert f'<span class="num">{show(settings.TUTOR_MONTHLY_PLUS)}</span> tutor questions a month' in pricing
 
 
 def test_demo_numbers_come_from_the_sample_file():
@@ -276,6 +291,7 @@ def test_the_six_sections_render_in_order(pages):
         assert pages[k]["value"]["edu_visible"]                       # "Education only, not advice" without scrolling
 
 
+@needs("findings")
 def test_no_real_number_is_on_the_rendered_page(pages):
     for k in ("desktop", "phone", "signed_in"):
         text = pages[k]["value"]["text"]
@@ -285,6 +301,7 @@ def test_no_real_number_is_on_the_rendered_page(pages):
             assert tok.replace("£", "") in ALLOWED, (k, tok)
 
 
+@needs("findings")
 def test_no_real_number_is_on_the_rendered_method_page(pages):
     for k in ("method", "method_phone"):
         v = pages[k]["value"]

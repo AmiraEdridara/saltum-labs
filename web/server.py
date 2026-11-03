@@ -89,6 +89,9 @@ def root(request: Request):
     page = (settings.STATIC_DIR / "home.html").read_text(encoding="utf-8")
     if user_of(request) is not None:
         page = page.replace("<body>", '<body class="signed-in">', 1)
+    for key in ("tutor_daily_free", "tutor_monthly_plus", "tutor_plus_gbp_month"):      # prices: web/pricing.json, not in git
+        value = getattr(settings, key.upper())
+        page = page.replace("{{" + key + "}}", "–" if value is None else str(value))
     return HTMLResponse(page, headers={"Cache-Control": "no-store"})
 
 

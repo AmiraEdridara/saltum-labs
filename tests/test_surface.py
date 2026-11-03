@@ -1,4 +1,7 @@
 """One surface date matches its prototype event page (data/figures/events/2026-09-11_CPI.html)."""
+from tests.private_files import require
+
+require("database", "event pages")
 import json
 import re
 

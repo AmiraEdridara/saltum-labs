@@ -1,6 +1,9 @@
 """Page 3 in headless Edge: the summary matches data/stage5b_summary.txt exactly; filters change the summary
 and the table; a missing-day event shows its reason; sorting; rows open the Vol surface page; a visible error
 when the API fails; Split view and phone width; no browser processes left."""
+from tests.private_files import require
+
+require("database", "stage5b summary")
 import re
 import subprocess
 

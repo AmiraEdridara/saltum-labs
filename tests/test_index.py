@@ -1,4 +1,7 @@
 """The event index summary matches data/stage5b_summary.txt exactly."""
+from tests.private_files import require
+
+require("database", "stage5b summary")
 import re
 
 import pytest

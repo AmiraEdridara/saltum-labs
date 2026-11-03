@@ -23,6 +23,9 @@ def pytest_configure(config):
     real, lock = project.DUCKDB_PATH, project.LIVE_DIR / "update.lock"
     config.db_copy_folder = pathlib.Path(tempfile.mkdtemp(prefix="saltum-test-db-"))
     copy = config.db_copy_folder / real.name
+    if not real.exists():                             # a clone without the private database: those tests skip
+        project.DUCKDB_PATH = copy
+        return
     end = time.time() + 300
     while True:                                       # not while the update is writing: the copy would be torn
         try:

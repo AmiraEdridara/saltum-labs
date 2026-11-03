@@ -6,7 +6,11 @@ import subprocess
 
 import pytest
 
+from tests.private_files import require
+from web import settings
 from web.users import TutorStore, UserStore
+
+require("pricing")              # the panel waits for its questions-left count, which needs the plan limits
 
 PANEL = ("(() => { const l = document.getElementById('tutor-left'); return !!l && /questions left/.test(l.textContent)"
          " && !document.getElementById('tutor').classList.contains('hidden'); })()")
@@ -95,7 +99,8 @@ def test_no_tutor_page_and_shortcuts_renumbered(browser, sessions):
 
 def test_questions_left_shown_in_the_panel(browser, sessions):
     (v,) = (ok(r) for r in browser.visit([dict(url=URL, wait=PANEL, extract=STATE)]))
-    assert v["left"] == "7 of 7 questions left this day."
+    n = settings.TUTOR_DAILY_FREE
+    assert v["left"] == f"{n} of {n} questions left this day."
 
 
 def test_sessions_list_open_rename_delete_new(browser, sessions):

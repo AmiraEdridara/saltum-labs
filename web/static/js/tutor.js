@@ -34,7 +34,7 @@ function addMessage(role, text, extra = {}) {
 }
 
 function showAllowance(a) {
-  $("tutor-left").textContent = a ? `${a.left} of ${a.limit} questions left this ${a.per}.` : "";
+  $("tutor-left").textContent = a && a.limit != null ? `${a.left} of ${a.limit} questions left this ${a.per}.` : "";
 }
 
 function label(text) {

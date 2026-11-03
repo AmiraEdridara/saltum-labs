@@ -5,6 +5,7 @@ import time
 import pytest
 
 import codecheck
+from tests.private_files import needs
 from webutil import sign_up
 
 
@@ -22,6 +23,7 @@ def test_changed_since_start():
     assert not codecheck.changed_since_start("api", ".", started=time.time() + 3600)
 
 
+@needs("date list")                                 # /api/dates reads it
 def test_fresh_servers_do_not_ask_for_a_restart(client, started):
     started(time.time() + 3600)
     sign_up(client)
@@ -29,6 +31,7 @@ def test_fresh_servers_do_not_ask_for_a_restart(client, started):
         assert codecheck.HEADER not in client.get(path).headers, path
 
 
+@needs("date list")
 def test_old_servers_are_named_in_the_header(client, started):
     started(0.0)                      # both apps run in this process, so both count as started before the code
     sign_up(client)

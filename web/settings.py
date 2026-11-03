@@ -1,5 +1,6 @@
 """Settings for the terminal web server (separate from the pipeline's config.py).
 MW_USERS_DB and MW_API_BASE override two of them; the page tests use this to run on test ports."""
+import json
 import os
 import pathlib
 
@@ -14,9 +15,14 @@ SESSION_COOKIE = "mw_session"
 MIN_PASSWORD = 10
 
 PLANS = ("student", "tutor_plus")               # docs/prd.md, Page 4 decisions
-TUTOR_DAILY_FREE = 7                            # placeholder: the real plan limits and prices are private
-TUTOR_MONTHLY_PLUS = 250                        # placeholder
-TUTOR_PLUS_GBP_MONTH = 12                       # placeholder
+# Plan prices and tutor limits are private: they live in web/pricing.json, which is kept out of git
+# (keys tutor_daily_free, tutor_monthly_plus, tutor_plus_gbp_month). Without it they are None: the homepage shows
+# a dash and the tutor's question limit is not applied.
+PRICING_FILE = WEB_DIR / "pricing.json"
+_PRICING = json.loads(PRICING_FILE.read_text(encoding="utf-8")) if PRICING_FILE.exists() else {}
+TUTOR_DAILY_FREE = _PRICING.get("tutor_daily_free")              # Student: tutor messages a day
+TUTOR_MONTHLY_PLUS = _PRICING.get("tutor_monthly_plus")          # Tutor plus: tutor messages a month
+TUTOR_PLUS_GBP_MONTH = _PRICING.get("tutor_plus_gbp_month")      # Tutor plus price (no payments in version 1 yet)
 # The terminal's data credit: served with the logged-in account, so it is never in a public file.
 TERMINAL_FOOTER = ("Data: SPX and SPXW options from ThetaData; Treasury bills and VIX from FRED.",
                    "16:15 ET snapshots, 2020-01 to the latest close.")

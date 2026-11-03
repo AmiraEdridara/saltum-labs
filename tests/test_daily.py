@@ -16,6 +16,7 @@ import summarize
 from daily import calendar as cal
 from daily import guard, premium
 from daily import run as daily
+from tests.private_files import needs
 
 UK, NY = ZoneInfo("Europe/London"), ZoneInfo("America/New_York")
 
@@ -148,6 +149,7 @@ def recorded_hashes():
     return out
 
 
+@needs("findings")
 def test_frozen_files_match_the_freeze_record():
     rec = recorded_hashes()
     for f in daily.FROZEN_FILES:
@@ -164,6 +166,7 @@ def test_the_update_never_writes_frozen_paths():
 
 
 # ------------------------------------------------------------ the API while the data updates
+@needs("database")
 def test_api_says_data_is_updating_while_the_writer_holds_the_lock(client):
     from api import db
     if db._fallback is not None:                      # this test process's own read connection would block the writer

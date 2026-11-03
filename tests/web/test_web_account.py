@@ -13,7 +13,7 @@ def test_me_has_plan_counters_and_limits(client):
     me = client.get("/account/me").json()
     assert me["plan"] == "student" and me["provider"] == "dev"
     assert me["tutor_msgs_today"] == 0 and me["tutor_msgs_month"] == 0
-    assert me["limits"] == dict(student_daily=7, tutor_plus_monthly=250, enforced=False)
+    assert me["limits"] == dict(student_daily=settings.TUTOR_DAILY_FREE, tutor_plus_monthly=settings.TUTOR_MONTHLY_PLUS, enforced=False)
     assert "password_hash" not in me
 
 

@@ -2,8 +2,10 @@
 import hashlib
 
 import config
+from tests.private_files import needs
 
 
+@needs("findings")
 def test_findings(get):
     path = config.PROJECT_DIR / "data" / "findings_v1.md"
     j = get("/findings")
@@ -11,4 +13,4 @@ def test_findings(get):
     titles = [s["title"] for s in j["data"]["sections"]]
     assert j["n"] == len(titles) == 7
     assert titles[0] == "Event study: implied vs actual one-day move" and "What this does not show" in titles
-    assert "+0.018" in j["data"]["sections"][0]["markdown"]
+    assert j["data"]["sections"][0]["markdown"].strip() in path.read_text(encoding="utf-8")

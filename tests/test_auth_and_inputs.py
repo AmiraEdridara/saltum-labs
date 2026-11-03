@@ -3,6 +3,7 @@ import pytest
 
 from api.auth import DevTokenAuth
 from conftest import ENDPOINTS, TEST_TOKEN
+from tests.private_files import needs
 
 QUOTE_KEYS = {"bid", "ask", "mid", "price", "close", "open", "high", "low", "vol_spread", "straddle", "bid_size",
               "ask_size"}
@@ -39,6 +40,7 @@ def test_docs_are_off(client):
 @pytest.mark.parametrize("url", ["/events?type=xyz", "/events?period=2021", "/events/2026-13-01", "/events/20260911",
                                  "/events/index?exclude_flagged=maybe", "/events/index?include_ordinary=2",
                                  "/surface/yesterday", "/events/abc/skew", "/events/index?period=now"])
+@needs("database")
 def test_bad_input_gets_400(get, url):
     j = get(url, status=400)
     assert j["error"] == "bad input" and j["detail"]
@@ -49,6 +51,7 @@ def test_bad_input_gets_400(get, url):
                                        ("/surface/2022-04-12", "expiries within 14 days missing"),
                                        ("/surface/2026-10-10", "not a trading day"),
                                        ("/events/2026-09-14/skew", "not a CPI, NFP or FOMC event day")])
+@needs("database")
 def test_missing_data_gets_404_with_reason(get, url, text):
     assert text in get(url, status=404)["detail"]
 
@@ -64,6 +67,7 @@ def _keys(v):
 
 
 @pytest.mark.parametrize("url", ENDPOINTS + ["/events/index?include_ordinary=true"])
+@needs("database")
 def test_envelope_and_no_quotes(get, url):
     j = get(url)
     assert {"source", "n", "period", "params", "caveat", "data"} <= set(j)
