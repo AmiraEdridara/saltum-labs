@@ -60,6 +60,16 @@ Inspired by working through Akuna Capital's Options 101 and Options 201 courses.
 | `tests/` | pytest tests for the API (checked against the frozen output files) and for the web server (`tests/web/`) |
 | `make_ca_bundle.py` | Optional fix for antivirus HTTPS interception (see below) |
 
+## Setup
+
+```bash
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements.txt
+cp .env.example .env     # then fill in the keys
+```
+
+`.env` is git-ignored. `.env.example` lists every variable the project reads.
+
 ## How to run
 
 All commands are for Git Bash. Start in the project folder:
