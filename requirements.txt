@@ -1,0 +1,25 @@
+# Third-party packages imported by the pipeline, the API, the web server and the tests.
+# Versions are left unpinned; pin them with `pip freeze` once you have a working environment.
+
+# Data pipeline
+thetadata
+grpcio
+duckdb
+pandas
+numpy
+pyarrow
+matplotlib
+plotly
+certifi
+httpx
+python-dotenv
+
+# API and web server
+fastapi
+uvicorn
+
+# Tutor panel
+anthropic
+
+# Tests
+pytest
